@@ -30,7 +30,7 @@ final class MoonShineLayout extends AppLayout
     protected function menu(): array
     {
         return [
-            MenuItem::make('Заявки', EventsPage::class),
+            MenuItem::make(EventsPage::class, 'Заявки'),
             ...parent::menu(),
         ];
     }
