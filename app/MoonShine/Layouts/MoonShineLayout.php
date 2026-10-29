@@ -11,6 +11,7 @@ use MoonShine\Contracts\ColorManager\ColorManagerContract;
 use MoonShine\Contracts\ColorManager\PaletteContract;
 use MoonShine\MenuManager\MenuGroup;
 use MoonShine\MenuManager\MenuItem;
+use App\MoonShine\Pages\EventsPage;
 
 final class MoonShineLayout extends AppLayout
 {
@@ -29,7 +30,7 @@ final class MoonShineLayout extends AppLayout
     protected function menu(): array
     {
         return [
-            // Пункты меню UniMICE добавляются здесь
+            MenuItem::make('Заявки', EventsPage::class),
             ...parent::menu(),
         ];
     }
