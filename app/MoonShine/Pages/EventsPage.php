@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Pages;
 
+use App\MoonShine\Support\EventStatusColor;
 use App\Services\UniMice\Endpoints\EventsEndpoint;
 use App\Services\UniMice\UniMiceApiException;
 use MoonShine\Contracts\UI\ComponentContract;
@@ -43,6 +44,7 @@ final class EventsPage extends Page
             $rows[] = [
                 'id' => $event->id,
                 'title' => $event->title,
+                'statusId' => $event->status->id,
                 'status' => $event->status->name,
                 'type' => $event->type->name,
                 'city' => $event->city?->name ?? '—',
@@ -57,7 +59,10 @@ final class EventsPage extends Page
                 ->fields([
                     Text::make('ID', 'id'),
                     Text::make('Название', 'title'),
-                    Text::make('Статус', 'status'),
+                    Text::make('Статус', 'status')
+                        ->badge(static fn ($value, $field) => EventStatusColor::byId(
+                            (int) ($field->getData()?->toArray()['statusId'] ?? 0),
+                        )),
                     Text::make('Тип', 'type'),
                     Text::make('Город', 'city'),
                     Text::make('Начало', 'startDate'),
