@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\MoonShine\Pages\EventsPage;
 use Illuminate\Support\ServiceProvider;
 use MoonShine\Contracts\Core\DependencyInjection\CoreContract;
 use MoonShine\Laravel\DependencyInjection\MoonShine;
@@ -21,6 +22,7 @@ class MoonShineServiceProvider extends ServiceProvider
                 // Ресурсы админ-панели регистрируются здесь
             ])
             ->pages([
+                EventsPage::class,
                 ...$core->getConfig()->getPages(),
             ])
         ;
