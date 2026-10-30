@@ -23,8 +23,10 @@ return [
     ],
 
     'http' => [
-        'timeout' => (int) env('UNIMICE_HTTP_TIMEOUT', 15),
-        'connect_timeout' => (int) env('UNIMICE_HTTP_CONNECT_TIMEOUT', 5),
+        // Дефолты подобраны под реальную скорость API: список заявок
+        // формируется бэкендом до минуты.
+        'timeout' => (int) env('UNIMICE_HTTP_TIMEOUT', 120),
+        'connect_timeout' => (int) env('UNIMICE_HTTP_CONNECT_TIMEOUT', 10),
         'retry_times' => (int) env('UNIMICE_HTTP_RETRY_TIMES', 2),
     ],
 
