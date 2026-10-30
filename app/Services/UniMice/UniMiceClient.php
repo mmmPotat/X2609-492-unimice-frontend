@@ -8,6 +8,7 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\RequestException;
 use RuntimeException;
 
 /**
@@ -25,6 +26,7 @@ class UniMiceClient
     private readonly ?string $password;
     private readonly int $timeout;
     private readonly int $connectTimeout;
+    private readonly int $retryTimes;
     private readonly int $tokenCacheTtl;
     private readonly string $tokenCacheKey;
 
@@ -40,8 +42,9 @@ class UniMiceClient
         $this->loginPath = (string) config('unimice.auth.login_path', '/auth/login');
         $this->email = config('unimice.auth.email');
         $this->password = config('unimice.auth.password');
-        $this->timeout = (int) config('unimice.http.timeout', 15);
-        $this->connectTimeout = (int) config('unimice.http.connect_timeout', 5);
+        $this->timeout = (int) config('unimice.http.timeout', 120);
+        $this->connectTimeout = (int) config('unimice.http.connect_timeout', 10);
+        $this->retryTimes = (int) config('unimice.http.retry_times', 3);
         $this->tokenCacheTtl = (int) config('unimice.token.cache_ttl', 72000);
         $this->tokenCacheKey = (string) config('unimice.token.cache_key', 'unimice.api.token');
     }
@@ -115,6 +118,7 @@ class UniMiceClient
     {
         return Http::connectTimeout($this->connectTimeout)
             ->timeout($this->timeout)
+            ->retry($this->retryTimes, 1000)
             ->acceptJson()
             ->asJson()
             ->withToken($token ?? $this->token());
@@ -137,6 +141,7 @@ class UniMiceClient
 
         $response = Http::connectTimeout($this->connectTimeout)
             ->timeout($this->timeout)
+            ->retry($this->retryTimes, 1000)
             ->acceptJson()
             ->post($this->url($this->loginPath), [
                 'email' => $this->email,
