@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services\UniMice;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
+use Throwable;
 
 /**
  * Единственная точка HTTP-общения с REST API платформы UniMICE.
@@ -25,6 +27,7 @@ class UniMiceClient
     private readonly ?string $password;
     private readonly int $timeout;
     private readonly int $connectTimeout;
+    private readonly int $retryTimes;
     private readonly int $tokenCacheTtl;
     private readonly string $tokenCacheKey;
 
@@ -40,8 +43,9 @@ class UniMiceClient
         $this->loginPath = (string) config('unimice.auth.login_path', '/auth/login');
         $this->email = config('unimice.auth.email');
         $this->password = config('unimice.auth.password');
-        $this->timeout = (int) config('unimice.http.timeout', 15);
-        $this->connectTimeout = (int) config('unimice.http.connect_timeout', 5);
+        $this->timeout = (int) config('unimice.http.timeout', 120);
+        $this->connectTimeout = (int) config('unimice.http.connect_timeout', 10);
+        $this->retryTimes = (int) config('unimice.http.retry_times', 2);
         $this->tokenCacheTtl = (int) config('unimice.token.cache_ttl', 72000);
         $this->tokenCacheKey = (string) config('unimice.token.cache_key', 'unimice.api.token');
     }
@@ -75,7 +79,7 @@ class UniMiceClient
         $response = $this->send($method, $path, $query, $body);
 
         if ($response->status() === 401) {
-            $response = $this->http($this->token(fresh: true))
+            $response = $this->http($method, $this->token(fresh: true))
                 ->send($method, $this->url($path), $this->options($query, $body));
         }
 
@@ -88,7 +92,7 @@ class UniMiceClient
      */
     private function send(string $method, string $path, array $query, ?array $body): Response
     {
-        return $this->http()->send($method, $this->url($path), $this->options($query, $body));
+        return $this->http($method)->send($method, $this->url($path), $this->options($query, $body));
     }
 
     /**
@@ -111,13 +115,33 @@ class UniMiceClient
         return $options;
     }
 
-    private function http(?string $token = null): PendingRequest
+    private function http(string $method, ?string $token = null): PendingRequest
     {
-        return Http::connectTimeout($this->connectTimeout)
+        $request = Http::connectTimeout($this->connectTimeout)
             ->timeout($this->timeout)
             ->acceptJson()
             ->asJson()
             ->withToken($token ?? $this->token());
+
+        // Ретраим только идемпотентные методы: повтор не-GET запроса после
+        // обрыва соединения может создать дубль сущности на бэкенде.
+        if ($this->isIdempotent($method)) {
+            // throw: false — ошибочные HTTP-ответы возвращаются как Response,
+            // их разбирает слой выше; вылетать должны только обрывы соединения.
+            $request->retry(
+                $this->retryTimes,
+                1000,
+                fn (Throwable $e): bool => $e instanceof ConnectionException,
+                throw: false,
+            );
+        }
+
+        return $request;
+    }
+
+    private function isIdempotent(string $method): bool
+    {
+        return in_array(strtoupper($method), ['GET', 'HEAD', 'OPTIONS'], true);
     }
 
     private function url(string $path): string
@@ -135,8 +159,16 @@ class UniMiceClient
             throw new RuntimeException('UniMICE API credentials are not configured (UNIMICE_API_EMAIL / UNIMICE_API_PASSWORD)');
         }
 
+        // Логин идемпотентен (сущностей не создаёт), поэтому обрыв
+        // соединения можно безопасно ретраить.
         $response = Http::connectTimeout($this->connectTimeout)
             ->timeout($this->timeout)
+            ->retry(
+                $this->retryTimes,
+                1000,
+                fn (Throwable $e): bool => $e instanceof ConnectionException,
+                throw: false,
+            )
             ->acceptJson()
             ->post($this->url($this->loginPath), [
                 'email' => $this->email,
