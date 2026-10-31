@@ -82,6 +82,30 @@ final class EventsEndpointTest extends TestCase
         });
     }
 
+    public function test_statuses_maps_items_to_dto_collection(): void
+    {
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/events/statuses' => Http::response([
+                'status' => 'success',
+                'data' => ['items' => [
+                    ['id' => 1, 'name' => 'Черновик', 'nameEn' => 'Draft'],
+                    ['id' => 2, 'name' => 'Новая заявка', 'nameEn' => 'New'],
+                ]],
+            ]),
+        ]);
+
+        $statuses = (new EventsEndpoint(new UniMiceClient()))->statuses();
+
+        $this->assertInstanceOf(DataCollection::class, $statuses);
+        $this->assertCount(2, $statuses);
+
+        $first = $statuses->first();
+        $this->assertSame(1, $first->id);
+        $this->assertSame('Черновик', $first->name);
+        $this->assertSame('Draft', $first->nameEn);
+    }
+
     public function test_api_error_becomes_typed_exception(): void
     {
         Http::fake([
