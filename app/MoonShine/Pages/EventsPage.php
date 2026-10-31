@@ -65,6 +65,7 @@ final class EventsPage extends Page
                 'city' => $event->city?->name ?? '—',
                 'startDate' => $event->startDate?->format('d.m.Y H:i') ?? '—',
                 'participantsCount' => $event->participantsCount,
+                'detailUrl' => url('/admin/page/'.EventDetailPage::URI).'?'.http_build_query(['id' => $event->id]),
             ];
         }
 
@@ -89,6 +90,8 @@ final class EventsPage extends Page
                 Text::make('Город', 'city'),
                 Text::make('Начало', 'startDate'),
                 Number::make('Участники', 'participantsCount'),
+                Text::make('Действия', 'detailUrl')
+                    ->changePreview(static fn (string $url) => ActionButton::make('Открыть', $url)->primary()),
             ]);
 
         return $components;
