@@ -74,6 +74,30 @@ final class EventsEndpoint
     private const DATE_PARAMS = ['startDate', 'finishDate'];
 
     /**
+     * Одна заявка по id (GET /events/{id}). Ответ — тот же объект,
+     * что элемент списка, плюс связанные сущности (они в DTO пока
+     * не описаны и spatie игнорирует их).
+     *
+     * @throws UniMiceApiException
+     */
+    public function get(int $id): EventDto
+    {
+        $response = ApiResponse::fromHttp(
+            $this->client->request('GET', '/events/'.$id),
+        );
+
+        if (($exception = $response->toException()) !== null) {
+            throw $exception;
+        }
+
+        if (! is_array($response->data)) {
+            throw new UniMiceApiException('Пустой ответ API при загрузке заявки', 0);
+        }
+
+        return EventDto::from($response->data);
+    }
+
+    /**
      * Справочник статусов заявок — нужен для фильтров и подписей.
      *
      * @return DataCollection<int, EventStatusDto>

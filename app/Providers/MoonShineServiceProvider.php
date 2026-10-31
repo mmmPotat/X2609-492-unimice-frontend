@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\MoonShine\Pages\EventDetailPage;
 use App\MoonShine\Pages\EventsPage;
 use Illuminate\Support\ServiceProvider;
 use MoonShine\Contracts\Core\DependencyInjection\CoreContract;
@@ -23,6 +24,7 @@ class MoonShineServiceProvider extends ServiceProvider
             ])
             ->pages([
                 EventsPage::class,
+                EventDetailPage::class,
                 ...$core->getConfig()->getPages(),
             ])
         ;

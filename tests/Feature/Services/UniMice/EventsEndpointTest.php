@@ -106,6 +106,47 @@ final class EventsEndpointTest extends TestCase
         $this->assertSame('Draft', $first->nameEn);
     }
 
+    public function test_get_maps_single_event(): void
+    {
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/events/1' => Http::response([
+                'status' => 'success',
+                'data' => $this->fakeEvent(1, 'Конференция в Москве'),
+                'message' => null,
+                'errors' => null,
+                'timestamp' => '2026-10-31 18:00:00',
+            ]),
+        ]);
+
+        $event = (new EventsEndpoint(new UniMiceClient()))->get(1);
+
+        $this->assertSame(1, $event->id);
+        $this->assertSame('Конференция в Москве', $event->title);
+        $this->assertSame('Черновик', $event->status->name);
+    }
+
+    public function test_get_404_becomes_typed_exception(): void
+    {
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/events/999' => Http::response([
+                'status' => 'error',
+                'data' => null,
+                'message' => 'Event not found',
+                'errors' => null,
+                'timestamp' => '2026-10-31 18:00:00',
+            ], 404),
+        ]);
+
+        try {
+            (new EventsEndpoint(new UniMiceClient()))->get(999);
+            $this->fail('Exception expected');
+        } catch (UniMiceApiException $exception) {
+            $this->assertSame(404, $exception->httpStatus);
+        }
+    }
+
     public function test_api_error_becomes_typed_exception(): void
     {
         Http::fake([

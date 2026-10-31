@@ -135,6 +135,72 @@ final class EventsPageTest extends TestCase
         $this->actingAs($user, 'moonshine')->get('/admin/page/events-page')->assertOk();
     }
 
+    public function test_list_rows_have_open_buttons(): void
+    {
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/events/statuses' => Http::response([
+                'status' => 'success',
+                'data' => ['items' => [
+                    ['id' => 2, 'name' => 'Новая заявка', 'nameEn' => 'New'],
+                ]],
+            ]),
+            '*/events*' => Http::response([
+                'status' => 'success',
+                'data' => ['events' => [$this->fakeEvent()]],
+            ]),
+        ]);
+
+        $response = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->get('/admin/page/events-page');
+
+        $response->assertOk();
+        // ссылка на карточку заявки (id из fakeEvent)
+        $response->assertSee('id=1', escape: false);
+        $response->assertSee('Открыть');
+    }
+
+    public function test_detail_page_renders_event_card(): void
+    {
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/events/1' => Http::response([
+                'status' => 'success',
+                'data' => $this->fakeEvent(),
+            ]),
+        ]);
+
+        $response = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->get('/admin/page/event-detail?id=1');
+
+        $response->assertOk();
+        $response->assertSee('Конференция в Москве');
+        $response->assertSee('Параметры');
+        $response->assertSee('Новая заявка');
+        $response->assertSee('Москва');
+    }
+
+    public function test_detail_page_404_for_missing_event(): void
+    {
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/events/999' => Http::response([
+                'status' => 'error',
+                'data' => null,
+                'message' => 'Event not found',
+                'errors' => null,
+                'timestamp' => '2026-10-31 18:00:00',
+            ], 404),
+        ]);
+
+        $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->get('/admin/page/event-detail?id=999')
+            ->assertNotFound();
+    }
+
     /**
      * @return array<string, mixed>
      */
