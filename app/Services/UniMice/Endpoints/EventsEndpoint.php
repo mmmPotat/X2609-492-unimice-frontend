@@ -6,6 +6,7 @@ namespace App\Services\UniMice\Endpoints;
 
 use App\Services\UniMice\ApiResponse;
 use App\Services\UniMice\Dto\EventDto;
+use App\Services\UniMice\Dto\EventStatusDto;
 use App\Services\UniMice\UniMiceApiException;
 use App\Services\UniMice\UniMiceClient;
 use Spatie\LaravelData\DataCollection;
@@ -71,6 +72,27 @@ final class EventsEndpoint
      * в формате "[1,2,3]" (так требует валидация API).
      */
     private const DATE_PARAMS = ['startDate', 'finishDate'];
+
+    /**
+     * Справочник статусов заявок — нужен для фильтров и подписей.
+     *
+     * @return DataCollection<int, EventStatusDto>
+     * @throws UniMiceApiException
+     */
+    public function statuses(): DataCollection
+    {
+        $response = ApiResponse::fromHttp(
+            $this->client->request('GET', '/events/statuses'),
+        );
+
+        if (($exception = $response->toException()) !== null) {
+            throw $exception;
+        }
+
+        $items = is_array($response->data) ? ($response->data['items'] ?? []) : [];
+
+        return EventStatusDto::collect($items, DataCollection::class);
+    }
 
     /**
      * @param array<string, int|list<int>|string|null> $filters
