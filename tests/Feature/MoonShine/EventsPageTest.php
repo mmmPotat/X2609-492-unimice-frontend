@@ -107,6 +107,34 @@ final class EventsPageTest extends TestCase
         });
     }
 
+    public function test_page_renders_twice_with_serialized_cache(): void
+    {
+        // Регрессия: DataCollection spatie-data нельзя класть в кеш как
+        // объект (сериализация ломается), поэтому чипы строятся из
+        // plain-массива. Только сериализующий store (database) ловит баг.
+        config(['cache.default' => 'database']);
+
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/events/statuses' => Http::response([
+                'status' => 'success',
+                'data' => ['items' => [
+                    ['id' => 1, 'name' => 'Черновик', 'nameEn' => 'Draft'],
+                ]],
+            ]),
+            '*/events*' => Http::response([
+                'status' => 'success',
+                'data' => ['events' => []],
+            ]),
+        ]);
+
+        $user = MoonshineUser::factory()->create();
+
+        // второй запрос читает справочник из кеша — там баг и проявлялся
+        $this->actingAs($user, 'moonshine')->get('/admin/page/events-page')->assertOk();
+        $this->actingAs($user, 'moonshine')->get('/admin/page/events-page')->assertOk();
+    }
+
     /**
      * @return array<string, mixed>
      */

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\MoonShine\Pages;
 
 use App\MoonShine\Support\EventStatusColor;
+use App\Services\UniMice\Dto\EventStatusDto;
 use App\Services\UniMice\Endpoints\EventsEndpoint;
 use App\Services\UniMice\UniMiceApiException;
 use Illuminate\Support\Facades\Cache;
@@ -17,6 +18,7 @@ use MoonShine\UI\Components\Table\TableBuilder;
 use MoonShine\UI\Fields\Number;
 use MoonShine\UI\Fields\Text;
 use Spatie\LaravelData\DataCollection;
+use Throwable;
 
 /**
  * Список заявок на мероприятия — данные напрямую из API UniMICE,
@@ -100,13 +102,17 @@ final class EventsPage extends Page
      */
     private function statusBar(array $activeStatuses): ?Flex
     {
+        // Кешируем plain-массив, а не DataCollection: объекты spatie-data
+        // с анонимными классами внутри не переживают serialize кеша.
         try {
-            $statuses = Cache::remember(
+            $items = Cache::remember(
                 self::STATUSES_CACHE_KEY,
                 now()->addHour(),
-                fn (): DataCollection => app(EventsEndpoint::class)->statuses(),
+                fn (): array => app(EventsEndpoint::class)->statuses()->toArray(),
             );
-        } catch (UniMiceApiException) {
+
+            $statuses = EventStatusDto::collect($items, DataCollection::class);
+        } catch (Throwable) {
             return null;
         }
 
