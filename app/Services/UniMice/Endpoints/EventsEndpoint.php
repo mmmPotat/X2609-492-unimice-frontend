@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Services\UniMice\Endpoints;
 
 use App\Services\UniMice\ApiResponse;
+use App\Services\UniMice\Dto\CityDto;
 use App\Services\UniMice\Dto\EventDto;
 use App\Services\UniMice\Dto\EventStatusDto;
+use App\Services\UniMice\Dto\EventTypeDto;
 use App\Services\UniMice\UniMiceApiException;
 use App\Services\UniMice\UniMiceClient;
 use Spatie\LaravelData\DataCollection;
@@ -95,6 +97,75 @@ final class EventsEndpoint
         }
 
         return EventDto::from($response->data);
+    }
+
+    /**
+     * Создание заявки (POST /events). $data — тело SaveEventRequest,
+     * обязательные поля собирает контроллер формы.
+     *
+     * @param array<string, mixed> $data
+     * @throws UniMiceApiException
+     */
+    public function create(array $data): EventDto
+    {
+        $response = ApiResponse::fromHttp(
+            $this->client->request('POST', '/events', [], $data),
+        );
+
+        if (($exception = $response->toException()) !== null) {
+            throw $exception;
+        }
+
+        $event = is_array($response->data) ? ($response->data['event'] ?? $response->data) : null;
+
+        if (! is_array($event) || ! isset($event['id'])) {
+            throw new UniMiceApiException('Пустой ответ API при создании заявки', 0);
+        }
+
+        return EventDto::from($event);
+    }
+
+    /**
+     * Справочник типов мероприятий (для формы создания).
+     *
+     * @return DataCollection<int, EventTypeDto>
+     * @throws UniMiceApiException
+     */
+    public function types(): DataCollection
+    {
+        $response = ApiResponse::fromHttp(
+            $this->client->request('GET', '/events/types'),
+        );
+
+        if (($exception = $response->toException()) !== null) {
+            throw $exception;
+        }
+
+        $items = is_array($response->data) ? ($response->data['items'] ?? []) : [];
+
+        return EventTypeDto::collect($items, DataCollection::class);
+    }
+
+    /**
+     * Поиск городов (GET /cities/search?query=...). Без query API
+     * отдаёт пустой список.
+     *
+     * @return DataCollection<int, CityDto>
+     * @throws UniMiceApiException
+     */
+    public function searchCities(string $query): DataCollection
+    {
+        $response = ApiResponse::fromHttp(
+            $this->client->request('GET', '/cities/search', ['query' => $query]),
+        );
+
+        if (($exception = $response->toException()) !== null) {
+            throw $exception;
+        }
+
+        $items = is_array($response->data) ? $response->data : [];
+
+        return CityDto::collect($items, DataCollection::class);
     }
 
     /**
