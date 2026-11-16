@@ -201,6 +201,57 @@ final class EventsPageTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_create_page_renders_form(): void
+    {
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/events/types' => Http::response([
+                'status' => 'success',
+                'data' => ['items' => [
+                    ['id' => 1, 'name' => 'Конференция', 'nameEn' => 'Conference'],
+                ]],
+            ]),
+        ]);
+
+        $response = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->get('/admin/page/event-create');
+
+        $response->assertOk();
+        $response->assertSee('Новое мероприятие');
+        $response->assertSee('Создать заявку');
+        $response->assertSee('Конференция'); // опции справочника типов
+    }
+
+    public function test_create_page_fee_mode_fixes_type(): void
+    {
+        Http::fake(['*/auth/login' => Http::response(['token' => 'jwt-abc'])]);
+
+        $response = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->get('/admin/page/event-create?category=fee');
+
+        $response->assertOk();
+        $response->assertSee('Новый орг. взнос');
+        // текст info-алерта реально рендерится в слот (регрессия:
+        // Alert::make('текст') кладёт текст в icon, а слот остаётся пустым)
+        $response->assertSee('Тип заявки фиксирован');
+        // тип фиксирован — справочник не запрашиваем
+        Http::assertNotSent(static fn ($request) => str_contains((string) $request->url(), '/events/types'));
+    }
+
+    public function test_detail_page_without_id_shows_warning(): void
+    {
+        Http::fake(['*/auth/login' => Http::response(['token' => 'jwt-abc'])]);
+
+        $response = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->get('/admin/page/event-detail');
+
+        $response->assertOk();
+        $response->assertSee('Откройте заявку из списка заявок');
+    }
+
     /**
      * @return array<string, mixed>
      */
