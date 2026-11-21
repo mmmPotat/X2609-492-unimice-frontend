@@ -221,6 +221,9 @@ final class EventsPageTest extends TestCase
         $response->assertSee('Новое мероприятие');
         $response->assertSee('Создать заявку');
         $response->assertSee('Конференция'); // опции справочника типов
+        // select города провязан с эндпоинтом async-поиска
+        // (в x-data URL JSON-экранирован: слэши с бэкслешем)
+        $response->assertSee('event-create\/cities', escape: false);
     }
 
     public function test_create_page_fee_mode_fixes_type(): void

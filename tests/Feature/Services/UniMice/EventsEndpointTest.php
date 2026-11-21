@@ -227,6 +227,28 @@ final class EventsEndpointTest extends TestCase
         });
     }
 
+    public function test_city_maps_single_city(): void
+    {
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/cities/6' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'id' => 6,
+                    'name' => 'Москва',
+                    'nameEn' => 'Moscow',
+                    'country' => ['id' => 1, 'name' => 'Россия', 'nameEn' => 'Russia'],
+                    'timezone' => 'Europe/Moscow',
+                ],
+            ]),
+        ]);
+
+        $city = (new EventsEndpoint(new UniMiceClient()))->city(6);
+
+        $this->assertSame(6, $city->id);
+        $this->assertSame('Москва', $city->name);
+    }
+
     public function test_create_posts_body_and_maps_event(): void
     {
         $fake = $this->fakeEvent(42, 'Новая конференция');
