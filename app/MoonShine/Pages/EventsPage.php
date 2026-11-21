@@ -49,7 +49,7 @@ final class EventsPage extends Page
             );
         } catch (UniMiceApiException $exception) {
             return [
-                Alert::make($exception->getMessage(), 'Ошибка API')->error(),
+                Alert::make(type: 'error')->content($exception->getMessage()),
             ];
         }
 
