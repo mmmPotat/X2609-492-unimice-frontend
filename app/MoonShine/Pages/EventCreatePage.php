@@ -26,10 +26,9 @@ use MoonShine\UI\Fields\Textarea;
  * тип и категория фиксированы. Шаги «Площадка/Зал/Оборудование» из
  * веб-примера появятся позже — они завязаны на каталог площадок.
  *
- * Город подбирается без JS: пользователь вводит подстроку и жмёт
- * «Создать заявку» — контроллер вместо создания возвращает форму
- * со списком найденных городов, один из них нужно выбрать и нажать
- * ещё раз.
+ * Город — async-select: варианты подгружаются с сервера по мере
+ * ввода (GET /admin/event-create/cities?query=...), поиск делает
+ * API через GET /cities/search.
  */
 final class EventCreatePage extends Page
 {
@@ -68,13 +67,6 @@ final class EventCreatePage extends Page
             $components[] = Alert::make(type: 'info')->content('Тип заявки фиксирован: «Орг. взнос»');
         }
 
-        $cityOptions = $this->cityOptions();
-
-        if ($cityOptions !== []) {
-            $components[] = Alert::make(type: 'info')
-                ->content('Выберите город из списка и нажмите «Создать заявку» ещё раз.');
-        }
-
         $fields = [
             Text::make('Название', 'title')->required(),
         ];
@@ -88,15 +80,10 @@ final class EventCreatePage extends Page
             $fields[] = Hidden::make('typeId', 'typeId');
         }
 
-        $fields[] = Text::make('Город (введите название и нажмите «Создать заявку» для подбора)', 'cityQuery');
-
-        if ($cityOptions !== []) {
-            $fields[] = Select::make('Выбранный город', 'cityId')
-                ->options($cityOptions)
-                ->required();
-        } else {
-            $fields[] = Hidden::make('cityId', 'cityId');
-        }
+        $fields[] = Select::make('Город', 'cityId')
+            ->options($this->selectedCityOptions())
+            ->async(route('admin.event-create.cities'))
+            ->required();
 
         $fields[] = Number::make('Количество участников', 'participantsCount')->required()->min(1);
         $fields[] = Date::make('Начало', 'startDate')->required()->withTime();
@@ -120,15 +107,27 @@ final class EventCreatePage extends Page
     }
 
     /**
-     * Варианты городов, найденные контроллером на прошлом шаге.
+     * Подпись уже выбранного города (рендер формы после ошибки
+     * валидации): иначе select с async-опциями покажет «пустое»
+     * выбранное значение — label приезжает только из поиска.
      *
      * @return array<int, string>
      */
-    private function cityOptions(): array
+    private function selectedCityOptions(): array
     {
-        $options = session('cityOptions');
+        $cityId = filter_var(old('cityId'), FILTER_VALIDATE_INT);
 
-        return is_array($options) ? $options : [];
+        if ($cityId === false || $cityId <= 0) {
+            return [];
+        }
+
+        try {
+            $city = app(EventsEndpoint::class)->city($cityId);
+        } catch (UniMiceApiException) {
+            return [];
+        }
+
+        return [$city->id => $city->name];
     }
 
     /**

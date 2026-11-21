@@ -18,9 +18,8 @@ use Illuminate\Validation\ValidationException;
 /**
  * Обработка формы создания заявки (мероприятие / орг. взнос).
  *
- * Город подбирается в два захода без JS: пока cityId не выбран,
- * контроллер вместо создания заявки ищет города по подстроке cityQuery
- * и возвращает форму со списком найденных вариантов.
+ * Город приходит выбранным из async-select (поиск городов —
+ * CitySearchController), здесь только валидация и POST в API.
  */
 final class EventCreateController extends Controller
 {
@@ -47,51 +46,11 @@ final class EventCreateController extends Controller
             'participantsCount' => ['required', 'integer', 'min:1'],
             'startDate' => ['required', 'date'],
             'finishDate' => ['required', 'date', 'after:startDate'],
-            'cityQuery' => ['nullable', 'string', 'min:2', 'max:255'],
-            'cityId' => ['nullable', 'integer', 'min:1'],
+            'cityId' => ['required', 'integer', 'min:1'],
             'description' => ['nullable', 'string', 'max:5000'],
         ]);
 
-        if (empty($validated['cityId'])) {
-            return $this->pickCity($request, $validated);
-        }
-
         return $this->createEvent($request, $validated, $isFee);
-    }
-
-    /**
-     * Первый заход: ищем города по подстроке и возвращаем форму
-     * со списком вариантов. Без подстроки — просим указать город.
-     */
-    private function pickCity(Request $request, array $validated): RedirectResponse
-    {
-        $query = trim((string) ($validated['cityQuery'] ?? ''));
-
-        if ($query === '') {
-            throw ValidationException::withMessages([
-                'cityQuery' => 'Укажите город: введите название и нажмите «Создать заявку» для подбора.',
-            ]);
-        }
-
-        try {
-            $cities = $this->events->searchCities($query);
-        } catch (UniMiceApiException $exception) {
-            return back()->withInput()->with('apiError', $exception->getMessage());
-        }
-
-        $options = [];
-
-        foreach ($cities as $city) {
-            $options[$city->id] = $city->name;
-        }
-
-        if ($options === []) {
-            throw ValidationException::withMessages([
-                'cityQuery' => 'Город «'.$query.'» не найден. Попробуйте другой запрос.',
-            ]);
-        }
-
-        return back()->withInput()->with('cityOptions', $options);
     }
 
     /**

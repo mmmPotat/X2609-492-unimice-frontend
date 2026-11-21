@@ -24,7 +24,19 @@ final class EventCreateControllerTest extends TestCase
         ]);
     }
 
-    public function test_city_query_returns_options_instead_of_creating(): void
+    public function test_city_id_is_required(): void
+    {
+        Http::fake(['*/auth/login' => Http::response(['token' => 'jwt-abc'])]);
+
+        $response = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->post(route('admin.event-create'), $this->validPayload(cityId: null));
+
+        $response->assertSessionHasErrors(['cityId']);
+        Http::assertNothingSent();
+    }
+
+    public function test_city_search_endpoint_returns_options(): void
     {
         Http::fake([
             '*/auth/login' => Http::response(['token' => 'jwt-abc']),
@@ -39,30 +51,32 @@ final class EventCreateControllerTest extends TestCase
 
         $response = $this
             ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
-            ->post(route('admin.event-create'), $this->validPayload(cityId: null, cityQuery: 'Москва'));
+            ->getJson(route('admin.event-create.cities', ['query' => 'Москва']));
 
-        $response->assertRedirect();
-
-        // заявка НЕ создавалась — был только поиск городов
-        Http::assertNotSent(static fn ($request) => $request->method() === 'POST'
-            && str_contains((string) $request->url(), '/events'));
+        $response->assertOk();
+        $response->assertJsonCount(2);
+        $response->assertJsonPath('0.label', 'Москва');
+        $response->assertJsonPath('0.value', '6');
+        $response->assertJsonPath('1.label', 'Москва-2');
+        $response->assertJsonPath('1.value', '7');
 
         Http::assertSent(static fn ($request) => str_contains((string) $request->url(), '/cities/search')
             && ($request->data()['query'] ?? null) === 'Москва');
-
-        $response->assertSessionHas('cityOptions', [6 => 'Москва', 7 => 'Москва-2']);
     }
 
-    public function test_empty_city_query_shows_validation_error(): void
+    public function test_city_search_endpoint_with_empty_query_returns_empty_list(): void
     {
         Http::fake(['*/auth/login' => Http::response(['token' => 'jwt-abc'])]);
 
         $response = $this
             ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
-            ->post(route('admin.event-create'), $this->validPayload(cityId: null, cityQuery: null));
+            ->getJson(route('admin.event-create.cities'));
 
-        $response->assertSessionHasErrors(['cityQuery']);
-        Http::assertNothingSent();
+        $response->assertOk();
+        $response->assertExactJson([]);
+
+        // пустой запрос в API не уходит — отвечаем сразу
+        Http::assertNotSent(static fn ($request) => str_contains((string) $request->url(), '/cities/search'));
     }
 
     public function test_create_event_posts_complete_body_and_redirects_to_detail(): void
@@ -179,7 +193,7 @@ final class EventCreateControllerTest extends TestCase
     /**
      * @return array<string, mixed>
      */
-    private function validPayload(?int $cityId = 6, ?string $cityQuery = null): array
+    private function validPayload(?int $cityId = 6): array
     {
         return [
             'title' => 'Тестовая конференция',
@@ -187,7 +201,6 @@ final class EventCreateControllerTest extends TestCase
             'participantsCount' => 50,
             'startDate' => '2026-12-01T10:00',
             'finishDate' => '2026-12-01T18:00',
-            'cityQuery' => $cityQuery,
             'cityId' => $cityId,
             'description' => 'Комментарий',
         ];

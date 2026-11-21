@@ -147,6 +147,30 @@ final class EventsEndpoint
     }
 
     /**
+     * Один город по id (GET /cities/{id}). Нужен, чтобы показать
+     * подпись выбранного города при повторном рендере формы
+     * (например, после ошибки валидации).
+     *
+     * @throws UniMiceApiException
+     */
+    public function city(int $id): CityDto
+    {
+        $response = ApiResponse::fromHttp(
+            $this->client->request('GET', '/cities/'.$id),
+        );
+
+        if (($exception = $response->toException()) !== null) {
+            throw $exception;
+        }
+
+        if (! is_array($response->data)) {
+            throw new UniMiceApiException('Пустой ответ API при загрузке города', 0);
+        }
+
+        return CityDto::from($response->data);
+    }
+
+    /**
      * Поиск городов (GET /cities/search?query=...). Без query API
      * отдаёт пустой список.
      *
