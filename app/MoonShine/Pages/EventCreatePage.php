@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Pages;
 
+use App\MoonShine\Fields\SafeDate;
 use App\Services\UniMice\Endpoints\EventsEndpoint;
 use App\Services\UniMice\UniMiceApiException;
 use MoonShine\Contracts\UI\ComponentContract;
@@ -12,7 +13,6 @@ use MoonShine\Support\Enums\FormMethod;
 use MoonShine\UI\Components\Alert;
 use MoonShine\UI\Components\FormBuilder;
 use MoonShine\UI\Components\Heading;
-use MoonShine\UI\Fields\Date;
 use MoonShine\UI\Fields\Hidden;
 use MoonShine\UI\Fields\Number;
 use MoonShine\UI\Fields\Select;
@@ -86,8 +86,8 @@ final class EventCreatePage extends Page
             ->required();
 
         $fields[] = Number::make('Количество участников', 'participantsCount')->required()->min(1);
-        $fields[] = Date::make('Начало', 'startDate')->required()->withTime();
-        $fields[] = Date::make('Завершение', 'finishDate')->required()->withTime();
+        $fields[] = SafeDate::make('Начало', 'startDate')->required()->withTime();
+        $fields[] = SafeDate::make('Завершение', 'finishDate')->required()->withTime();
         $fields[] = Textarea::make('Комментарий к заявке', 'description');
 
         $components[] = Heading::make($this->getTitle());
@@ -95,7 +95,6 @@ final class EventCreatePage extends Page
             ->action(route('admin.event-create', ['category' => $isFee ? self::CATEGORY_FEE : self::CATEGORY_EVENT]))
             ->method(FormMethod::POST)
             ->fields($fields)
-            ->fill(old() ?: [])
             ->submit('Создать заявку');
 
         return $components;
