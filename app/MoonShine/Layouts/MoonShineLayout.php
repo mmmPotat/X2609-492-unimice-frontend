@@ -16,6 +16,7 @@ use App\MoonShine\Pages\CompanyPage;
 use App\MoonShine\Pages\EmployeesPage;
 use App\MoonShine\Pages\EventCreatePage;
 use App\MoonShine\Pages\EventsPage;
+use App\MoonShine\Pages\HelpPage;
 use App\MoonShine\Pages\ProfilePage;
 
 final class MoonShineLayout extends AppLayout
@@ -107,6 +108,7 @@ final class MoonShineLayout extends AppLayout
                 ->setUrl(url('/admin/page/'.EventCreatePage::URI.'?category=fee')),
             MenuItem::make(EmployeesPage::class, 'Сотрудники'),
             MenuItem::make(CompanyPage::class, 'О компании'),
+            MenuItem::make(HelpPage::class, 'Помощь')->icon('question-mark-circle'),
             MenuItem::make(ProfilePage::class, 'Профиль'),
             ...parent::menu(),
         ];

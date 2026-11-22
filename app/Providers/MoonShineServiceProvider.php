@@ -9,6 +9,7 @@ use App\MoonShine\Pages\EmployeesPage;
 use App\MoonShine\Pages\EventCreatePage;
 use App\MoonShine\Pages\EventDetailPage;
 use App\MoonShine\Pages\EventsPage;
+use App\MoonShine\Pages\HelpPage;
 use App\MoonShine\Pages\ProfilePage;
 use Illuminate\Support\ServiceProvider;
 use MoonShine\Contracts\Core\DependencyInjection\CoreContract;
@@ -33,6 +34,7 @@ class MoonShineServiceProvider extends ServiceProvider
                 EmployeesPage::class,
                 ProfilePage::class,
                 CompanyPage::class,
+                HelpPage::class,
                 ...$core->getConfig()->getPages(),
             ])
         ;
