@@ -46,11 +46,18 @@ final class EventDetailPage extends Page
      */
     protected function components(): iterable
     {
+        $components = [];
+
+        if (($success = session('successMessage')) !== null) {
+            $components[] = Alert::make(type: 'success')->content((string) $success);
+        }
+
         $id = filter_var(request()->query('id'), FILTER_VALIDATE_INT);
 
         if ($id === false || $id <= 0) {
             return [
-                Alert::make('Откройте заявку из списка заявок', 'Не указана заявка')->warning(),
+                ...$components,
+                Alert::make(type: 'warning')->content('Откройте заявку из списка заявок'),
             ];
         }
 
@@ -62,11 +69,13 @@ final class EventDetailPage extends Page
             }
 
             return [
-                Alert::make($exception->getMessage(), 'Ошибка API')->error(),
+                ...$components,
+                Alert::make(type: 'error')->content($exception->getMessage()),
             ];
         }
 
         return [
+            ...$components,
             ActionButton::make('← К списку заявок', $this->listUrl())->secondary(),
             Heading::make($event->title),
             Grid::make([

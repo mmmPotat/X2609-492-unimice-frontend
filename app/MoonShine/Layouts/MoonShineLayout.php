@@ -11,7 +11,11 @@ use MoonShine\Contracts\ColorManager\ColorManagerContract;
 use MoonShine\Contracts\ColorManager\PaletteContract;
 use MoonShine\MenuManager\MenuGroup;
 use MoonShine\MenuManager\MenuItem;
+use App\MoonShine\Pages\CompanyPage;
+use App\MoonShine\Pages\EmployeesPage;
+use App\MoonShine\Pages\EventCreatePage;
 use App\MoonShine\Pages\EventsPage;
+use App\MoonShine\Pages\ProfilePage;
 
 final class MoonShineLayout extends AppLayout
 {
@@ -31,6 +35,12 @@ final class MoonShineLayout extends AppLayout
     {
         return [
             MenuItem::make(EventsPage::class, 'Заявки'),
+            MenuItem::make(EventCreatePage::class, 'Новое мероприятие'),
+            MenuItem::make(EventCreatePage::class, 'Новый орг. взнос')
+                ->setUrl(url('/admin/page/'.EventCreatePage::URI.'?category=fee')),
+            MenuItem::make(EmployeesPage::class, 'Сотрудники'),
+            MenuItem::make(CompanyPage::class, 'О компании'),
+            MenuItem::make(ProfilePage::class, 'Профиль'),
             ...parent::menu(),
         ];
     }

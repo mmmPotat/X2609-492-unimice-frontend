@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Services\UniMice;
 
+use App\Services\UniMice\Dto\CityDto;
 use App\Services\UniMice\Dto\EventDto;
+use App\Services\UniMice\Dto\EventTypeDto;
 use App\Services\UniMice\Endpoints\EventsEndpoint;
 use App\Services\UniMice\UniMiceApiException;
 use App\Services\UniMice\UniMiceClient;
@@ -164,6 +166,139 @@ final class EventsEndpointTest extends TestCase
         $this->expectExceptionMessage('You are not allowed to perform this action');
 
         (new EventsEndpoint(new UniMiceClient()))->list();
+    }
+
+    public function test_types_maps_items_to_dto_collection(): void
+    {
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/events/types' => Http::response([
+                'status' => 'success',
+                'data' => ['items' => [
+                    ['id' => 29, 'name' => 'Орг. взнос', 'nameEn' => 'Arrangement fee'],
+                    ['id' => 1, 'name' => 'Конференция', 'nameEn' => 'Conference'],
+                ]],
+            ]),
+        ]);
+
+        $types = (new EventsEndpoint(new UniMiceClient()))->types();
+
+        $this->assertInstanceOf(DataCollection::class, $types);
+        $this->assertCount(2, $types);
+        $this->assertContainsOnlyInstancesOf(EventTypeDto::class, $types->items());
+        $this->assertSame('Орг. взнос', $types->first()->name);
+    }
+
+    public function test_search_cities_maps_direct_list_and_sends_query_param(): void
+    {
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/cities/search*' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    [
+                        'id' => 6,
+                        'name' => 'Москва',
+                        'nameEn' => 'Moscow',
+                        'country' => ['id' => 1, 'name' => 'Россия', 'nameEn' => 'Russia'],
+                        'timezone' => 'Europe/Moscow',
+                    ],
+                    [
+                        'id' => 7,
+                        'name' => 'Москва-на-Волге',
+                        'nameEn' => null,
+                        'country' => null,
+                        'timezone' => null,
+                    ],
+                ],
+            ]),
+        ]);
+
+        $cities = (new EventsEndpoint(new UniMiceClient()))->searchCities('мос');
+
+        $this->assertCount(2, $cities);
+        $this->assertContainsOnlyInstancesOf(CityDto::class, $cities->items());
+        $this->assertSame('Москва', $cities->first()->name);
+        $this->assertSame('Россия', $cities->first()->country?->name);
+
+        Http::assertSent(static function ($request) {
+            return str_contains((string) $request->url(), '/cities/search')
+                && ($request->data()['query'] ?? null) === 'мос';
+        });
+    }
+
+    public function test_city_maps_single_city(): void
+    {
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/cities/6' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'id' => 6,
+                    'name' => 'Москва',
+                    'nameEn' => 'Moscow',
+                    'country' => ['id' => 1, 'name' => 'Россия', 'nameEn' => 'Russia'],
+                    'timezone' => 'Europe/Moscow',
+                ],
+            ]),
+        ]);
+
+        $city = (new EventsEndpoint(new UniMiceClient()))->city(6);
+
+        $this->assertSame(6, $city->id);
+        $this->assertSame('Москва', $city->name);
+    }
+
+    public function test_create_posts_body_and_maps_event(): void
+    {
+        $fake = $this->fakeEvent(42, 'Новая конференция');
+
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/events' => Http::response([
+                'status' => 'success',
+                'data' => ['event' => $fake],
+            ]),
+        ]);
+
+        $event = (new EventsEndpoint(new UniMiceClient()))->create([
+            'title' => 'Новая конференция',
+            'statusId' => 2,
+            'typeId' => 1,
+            'categoryId' => 3,
+            'cityId' => 6,
+        ]);
+
+        $this->assertSame(42, $event->id);
+        $this->assertSame('Новая конференция', $event->title);
+
+        Http::assertSent(static function ($request) {
+            return $request->method() === 'POST'
+                && str_contains((string) $request->url(), '/events')
+                && ($request['title'] ?? null) === 'Новая конференция'
+                && ($request['statusId'] ?? null) === 2;
+        });
+    }
+
+    public function test_create_422_throws_with_field_errors(): void
+    {
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/events' => Http::response([
+                'status' => 'error',
+                'data' => null,
+                'message' => 'Validation failed',
+                'errors' => ['title' => ['This value should not be blank.']],
+            ], 422),
+        ]);
+
+        try {
+            (new EventsEndpoint(new UniMiceClient()))->create([]);
+            $this->fail('Exception expected');
+        } catch (UniMiceApiException $exception) {
+            $this->assertSame(422, $exception->httpStatus);
+            $this->assertSame(['title' => ['This value should not be blank.']], $exception->errors);
+        }
     }
 
     /**

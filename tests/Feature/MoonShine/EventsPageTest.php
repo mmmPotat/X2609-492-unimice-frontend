@@ -202,6 +202,84 @@ final class EventsPageTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_create_page_renders_form(): void
+    {
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/events/types' => Http::response([
+                'status' => 'success',
+                'data' => ['items' => [
+                    ['id' => 1, 'name' => 'Конференция', 'nameEn' => 'Conference'],
+                ]],
+            ]),
+        ]);
+
+        $response = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->get('/admin/page/event-create');
+
+        $response->assertOk();
+        $response->assertSee('Новое мероприятие');
+        $response->assertSee('Создать заявку');
+        $response->assertSee('Конференция'); // опции справочника типов
+        // select города провязан с эндпоинтом async-поиска
+        // (в x-data URL JSON-экранирован: слэши с бэкслешем)
+        $response->assertSee('event-create\/cities', escape: false);
+    }
+
+    public function test_create_page_fee_mode_fixes_type(): void
+    {
+        Http::fake(['*/auth/login' => Http::response(['token' => 'jwt-abc'])]);
+
+        $response = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->get('/admin/page/event-create?category=fee');
+
+        $response->assertOk();
+        $response->assertSee('Новый орг. взнос');
+        // текст info-алерта реально рендерится в слот (регрессия:
+        // Alert::make('текст') кладёт текст в icon, а слот остаётся пустым)
+        $response->assertSee('Тип заявки фиксирован');
+        // тип фиксирован — справочник не запрашиваем
+        Http::assertNotSent(static fn ($request) => str_contains((string) $request->url(), '/events/types'));
+    }
+
+    public function test_create_page_survives_invalid_old_date(): void
+    {
+        // Регрессия: поле Date MoonShine падает с TypeError на строке,
+        // которую не разбирает strtotime (вендорный баг) — форма должна
+        // просто перерендериться без подстановки таких значений
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/events/types' => Http::response([
+                'status' => 'success',
+                'data' => ['items' => [
+                    ['id' => 1, 'name' => 'Конференция', 'nameEn' => 'Conference'],
+                ]],
+            ]),
+        ]);
+
+        $response = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->withSession(['_old_input' => ['startDate' => '12.12.121212', 'title' => 'Тест']])
+            ->get('/admin/page/event-create');
+
+        $response->assertOk();
+        $response->assertSee('Тест'); // остальные old-значения на месте
+    }
+
+    public function test_detail_page_without_id_shows_warning(): void
+    {
+        Http::fake(['*/auth/login' => Http::response(['token' => 'jwt-abc'])]);
+
+        $response = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->get('/admin/page/event-detail');
+
+        $response->assertOk();
+        $response->assertSee('Откройте заявку из списка заявок');
+    }
+
     /**
      * @return array<string, mixed>
      */

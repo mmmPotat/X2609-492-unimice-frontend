@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\MoonShine\Pages\CompanyPage;
+use App\MoonShine\Pages\EmployeesPage;
+use App\MoonShine\Pages\EventCreatePage;
 use App\MoonShine\Pages\EventDetailPage;
 use App\MoonShine\Pages\EventsPage;
+use App\MoonShine\Pages\ProfilePage;
 use Illuminate\Support\ServiceProvider;
 use MoonShine\Contracts\Core\DependencyInjection\CoreContract;
 use MoonShine\Laravel\DependencyInjection\MoonShine;
@@ -25,6 +29,10 @@ class MoonShineServiceProvider extends ServiceProvider
             ->pages([
                 EventsPage::class,
                 EventDetailPage::class,
+                EventCreatePage::class,
+                EmployeesPage::class,
+                ProfilePage::class,
+                CompanyPage::class,
                 ...$core->getConfig()->getPages(),
             ])
         ;
