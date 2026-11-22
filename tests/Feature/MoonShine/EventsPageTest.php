@@ -51,7 +51,7 @@ final class EventsPageTest extends TestCase
         $response->assertSee('Конференция в Москве'); // строка таблицы
     }
 
-    public function test_status_query_parameter_is_passed_to_api(): void
+    public function test_status_query_parameter_filters_events(): void
     {
         Http::fake([
             '*/auth/login' => Http::response(['token' => 'jwt-abc']),
@@ -64,19 +64,20 @@ final class EventsPageTest extends TestCase
             ]),
             '*/events*' => Http::response([
                 'status' => 'success',
-                'data' => ['events' => []],
+                'data' => ['events' => [
+                    array_merge($this->fakeEvent(), ['id' => 1, 'title' => 'Черновик Ивента', 'status' => ['id' => 1, 'name' => 'Черновик', 'nameEn' => 'Draft']]),
+                    array_merge($this->fakeEvent(), ['id' => 2, 'title' => 'Новая заявка Ивента', 'status' => ['id' => 2, 'name' => 'Новая заявка', 'nameEn' => 'New']]),
+                ]],
             ]),
         ]);
 
         $response = $this
             ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
-            ->get('/admin/page/events-page?status[]=2&status[]=6');
+            ->get('/admin/page/events-page?status[]=2');
 
         $response->assertOk();
-
-        Http::assertSent(static function ($request) {
-            return ($request->data()['statusIds'] ?? null) === '[2,6]';
-        });
+        $response->assertSee('Новая заявка Ивента');
+        $response->assertDontSee('Черновик Ивента');
     }
 
     public function test_page_works_without_filters(): void

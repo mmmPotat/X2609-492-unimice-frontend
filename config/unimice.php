@@ -36,4 +36,8 @@ return [
         'cache_ttl' => (int) env('UNIMICE_TOKEN_CACHE_TTL', 72000),
         'cache_key' => env('UNIMICE_TOKEN_CACHE_KEY', 'unimice.api.token'),
     ],
+
+    'events' => [
+        'cache_ttl' => (int) env('UNIMICE_EVENTS_CACHE_TTL', 300),
+    ],
 ];

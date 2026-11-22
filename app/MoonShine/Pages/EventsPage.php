@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\MoonShine\Pages;
 
 use App\MoonShine\Support\EventStatusColor;
+use App\Services\UniMice\Dto\EventDto;
 use App\Services\UniMice\Dto\EventStatusDto;
 use App\Services\UniMice\Endpoints\EventsEndpoint;
 use App\Services\UniMice\UniMiceApiException;
@@ -30,6 +31,7 @@ use Throwable;
 final class EventsPage extends Page
 {
     private const STATUSES_CACHE_KEY = 'unimice.events.statuses';
+    private const ALL_EVENTS_CACHE_KEY = 'unimice.events.all';
 
     public function getTitle(): string
     {
@@ -44,9 +46,26 @@ final class EventsPage extends Page
         $activeStatuses = $this->activeStatuses();
 
         try {
-            $events = app(EventsEndpoint::class)->list(
-                $activeStatuses === [] ? [] : ['statusIds' => $activeStatuses],
-            );
+            $cacheTtl = (int) config('unimice.events.cache_ttl', 300);
+
+            if ($cacheTtl > 0) {
+                $items = Cache::remember(
+                    self::ALL_EVENTS_CACHE_KEY,
+                    now()->addSeconds($cacheTtl),
+                    fn (): array => app(EventsEndpoint::class)->list()->toArray(),
+                );
+                $events = EventDto::collect($items, DataCollection::class);
+
+                if ($activeStatuses !== []) {
+                    $events = $events->filter(
+                        static fn (EventDto $event): bool => in_array($event->status->id, $activeStatuses, true),
+                    );
+                }
+            } else {
+                $events = app(EventsEndpoint::class)->list(
+                    $activeStatuses === [] ? [] : ['statusIds' => $activeStatuses],
+                );
+            }
         } catch (UniMiceApiException $exception) {
             return [
                 Alert::make($exception->getMessage(), 'Ошибка API')->error(),
