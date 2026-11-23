@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class HelpRequest extends Model
@@ -27,41 +28,45 @@ class HelpRequest extends Model
         'updated_at' => 'datetime',
     ];
 
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\User::class);
-    }
-
+    /**
+     * Человекочитаемое название статуса.
+     */
     protected function statusLabel(): Attribute
     {
         return Attribute::make(
-            get: fn (string $value) => match ($value) {
+            get: fn () => match ($this->status) {
                 'new' => 'Новая',
                 'in_progress' => 'В работе',
                 'resolved' => 'Решена',
                 'closed' => 'Закрыта',
-                default => $value,
+                default => $this->status,
             }
         );
     }
 
+    /**
+     * Человекочитаемое название приоритета.
+     */
     protected function priorityLabel(): Attribute
     {
         return Attribute::make(
-            get: fn (string $value) => match ($value) {
+            get: fn () => match ($this->priority) {
                 'low' => 'Низкий',
                 'normal' => 'Обычный',
                 'high' => 'Высокий',
                 'urgent' => 'Срочный',
-                default => $value,
+                default => $this->priority,
             }
         );
     }
 
+    /**
+     * Цвет статуса.
+     */
     protected function statusColor(): Attribute
     {
         return Attribute::make(
-            get: fn (string $value) => match ($value) {
+            get: fn () => match ($this->status) {
                 'new' => 'info',
                 'in_progress' => 'warning',
                 'resolved' => 'success',
@@ -71,6 +76,9 @@ class HelpRequest extends Model
         );
     }
 
+    /**
+     * Отметить обращение как решённое.
+     */
     public function markAsResolved(): void
     {
         $this->update([
@@ -79,8 +87,13 @@ class HelpRequest extends Model
         ]);
     }
 
+    /**
+     * Закрыть обращение.
+     */
     public function markAsClosed(): void
     {
-        $this->update(['status' => 'closed']);
+        $this->update([
+            'status' => 'closed',
+        ]);
     }
 }

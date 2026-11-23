@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('help_requests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('moonshine_users')->onDelete('cascade');
             $table->string('subject');
             $table->text('message');
             $table->enum('status', ['new', 'in_progress', 'resolved', 'closed'])->default('new');

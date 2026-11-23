@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\CitySearchController;
 use App\Http\Controllers\Admin\EventCreateController;
+use App\Http\Controllers\Admin\HelpRequestController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -15,3 +16,7 @@ Route::post('/admin/event-create', EventCreateController::class)
 Route::get('/admin/event-create/cities', CitySearchController::class)
     ->middleware('moonshine')
     ->name('admin.event-create.cities');
+
+Route::post('/admin/page/help', HelpRequestController::class)
+    ->middleware('moonshine')
+    ->name('admin.help-request.store');
