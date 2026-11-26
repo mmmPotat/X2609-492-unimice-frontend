@@ -79,6 +79,90 @@ final class EventsPageTest extends TestCase
         });
     }
 
+    public function test_pagination_slices_rows_and_keeps_status_filter(): void
+    {
+        $events = [];
+
+        foreach (range(1, 20) as $i) {
+            $events[] = array_merge($this->fakeEvent(), [
+                'id' => $i,
+                'title' => 'Заявка '.$i,
+            ]);
+        }
+
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/events/statuses' => Http::response([
+                'status' => 'success',
+                'data' => ['items' => [
+                    ['id' => 1, 'name' => 'Черновик', 'nameEn' => 'Draft'],
+                    ['id' => 2, 'name' => 'Новая заявка', 'nameEn' => 'New'],
+                ]],
+            ]),
+            '*/events*' => Http::response([
+                'status' => 'success',
+                'data' => ['events' => $events],
+            ]),
+        ]);
+
+        // первая страница: 15 из 20, фильтр статуса в ссылках сохраняется
+        $first = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->get('/admin/page/events-page?status[]=2');
+
+        $first->assertOk();
+        $first->assertSee('Заявка 15');
+        $first->assertDontSee('Заявка 16');
+        $first->assertSee('page=2');
+        $first->assertSee('status%5B0%5D=2');
+
+        // вторая страница: оставшиеся 5
+        $second = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->get('/admin/page/events-page?status[]=2&page=2');
+
+        $second->assertOk();
+        $second->assertSee('Заявка 16');
+        $second->assertSee('Заявка 20');
+        $second->assertDontSee('Заявка 15');
+    }
+
+    public function test_pagination_clamps_out_of_range_page_to_last_one(): void
+    {
+        $events = [];
+
+        foreach (range(1, 20) as $i) {
+            $events[] = array_merge($this->fakeEvent(), [
+                'id' => $i,
+                'title' => 'Заявка '.$i,
+            ]);
+        }
+
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/events/statuses' => Http::response([
+                'status' => 'success',
+                'data' => ['items' => [
+                    ['id' => 1, 'name' => 'Черновик', 'nameEn' => 'Draft'],
+                ]],
+            ]),
+            '*/events*' => Http::response([
+                'status' => 'success',
+                'data' => ['events' => $events],
+            ]),
+        ]);
+
+        // ?page= за пределами выборки: показываем последнюю страницу,
+        // а не пустую таблицу со счётчиком «1 to 1»
+        $response = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->get('/admin/page/events-page?page=99');
+
+        $response->assertOk();
+        $response->assertSee('Заявка 20');
+        $response->assertDontSee('Заявка 15');
+    }
+
     public function test_page_works_without_filters(): void
     {
         Http::fake([
