@@ -195,8 +195,6 @@ final class VenuesPage extends Page
                     Column::make([
                         Checkbox::make('Только избранные', 'isFavorite')
                             ->wrapperClass('unimice-filter-check'),
-                    ], colSpan: 4, adaptiveColSpan: 6),
-                    Column::make([
                         Select::make('На странице', 'limit')
                             ->options([
                                 12 => '12',
@@ -204,7 +202,7 @@ final class VenuesPage extends Page
                                 48 => '48',
                             ])
                             ->wrapperClass('unimice-filter-limit'),
-                    ], colSpan: 2, adaptiveColSpan: 6),
+                    ], colSpan: 4, adaptiveColSpan: 6),
                 ], gap: 4),
             ])
             ->fill([
