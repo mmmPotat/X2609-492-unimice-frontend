@@ -22,7 +22,6 @@ use MoonShine\UI\Components\FormBuilder;
 use MoonShine\UI\Components\Heading;
 use MoonShine\UI\Components\Layout\Column;
 use MoonShine\UI\Components\Layout\Divider;
-use MoonShine\UI\Components\Layout\Flex;
 use MoonShine\UI\Components\Layout\Grid;
 use MoonShine\UI\Fields\Checkbox;
 use MoonShine\UI\Fields\Number;
@@ -177,31 +176,36 @@ final class VenuesPage extends Page
 
                 Divider::make(),
 
-                // Числовые фильтры — короткие поля в один ряд, справа
-                // чекбокс избранных и селектор «на странице».
-                Flex::make([
-                    Number::make('Вместительность от', 'capacityMin')
-                        ->wrapperClass('unimice-filter-num'),
-                    Number::make('Вместительность до', 'capacityMax')
-                        ->wrapperClass('unimice-filter-num'),
-                    Number::make('Площадь от, м²', 'sizeMin')
-                        ->wrapperClass('unimice-filter-num'),
-                    Number::make('Площадь до, м²', 'sizeMax')
-                        ->wrapperClass('unimice-filter-num'),
-                    Number::make('Стоимость от', 'priceMin')
-                        ->wrapperClass('unimice-filter-num'),
-                    Number::make('Стоимость до', 'priceMax')
-                        ->wrapperClass('unimice-filter-num'),
-                    Checkbox::make('Только избранные', 'isFavorite')
-                        ->wrapperClass('unimice-filter-check'),
-                    Select::make('На странице', 'limit')
-                        ->options([
-                            12 => '12',
-                            24 => '24',
-                            48 => '48',
-                        ])
-                        ->wrapperClass('unimice-filter-limit'),
-                ], justifyAlign: 'start'),
+                // Числовые фильтры — как в Appsmith: три пары «от/до»
+                // столбиками, справа чекбокс избранных и селектор
+                // «на странице».
+                Grid::make([
+                    Column::make([
+                        Number::make('Вместительность от', 'capacityMin'),
+                        Number::make('Вместительность до', 'capacityMax'),
+                    ], colSpan: 2, adaptiveColSpan: 6),
+                    Column::make([
+                        Number::make('Площадь от, м²', 'sizeMin'),
+                        Number::make('Площадь до, м²', 'sizeMax'),
+                    ], colSpan: 2, adaptiveColSpan: 6),
+                    Column::make([
+                        Number::make('Стоимость от', 'priceMin'),
+                        Number::make('Стоимость до', 'priceMax'),
+                    ], colSpan: 2, adaptiveColSpan: 6),
+                    Column::make([
+                        Checkbox::make('Только избранные', 'isFavorite')
+                            ->wrapperClass('unimice-filter-check'),
+                    ], colSpan: 4, adaptiveColSpan: 6),
+                    Column::make([
+                        Select::make('На странице', 'limit')
+                            ->options([
+                                12 => '12',
+                                24 => '24',
+                                48 => '48',
+                            ])
+                            ->wrapperClass('unimice-filter-limit'),
+                    ], colSpan: 2, adaptiveColSpan: 6),
+                ], gap: 4),
             ])
             ->fill([
                 'name' => $filters['name'],
