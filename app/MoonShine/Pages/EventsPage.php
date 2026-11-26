@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\MoonShine\Pages;
 
 use App\MoonShine\Support\EventStatusColor;
+use App\MoonShine\Support\PagePaginator;
 use App\Services\UniMice\Dto\EventStatusDto;
 use App\Services\UniMice\Endpoints\EventsEndpoint;
 use App\Services\UniMice\UniMiceApiException;
@@ -26,6 +27,8 @@ use Throwable;
  *
  * Фильтрация — серверная, без JS: выбранные статусы живут в GET-параметре
  * ?status[]=2&status[]=6, страница читает его и пробрасывает в API.
+ * Пагинация клиентская: API /events отдаёт выборку одним ответом,
+ * страницы нарезаем сами (?page=, по 15 записей).
  */
 final class EventsPage extends Page
 {
@@ -42,6 +45,7 @@ final class EventsPage extends Page
     protected function components(): iterable
     {
         $activeStatuses = $this->activeStatuses();
+        $perPage = 15;
 
         try {
             $events = app(EventsEndpoint::class)->list(
@@ -77,8 +81,11 @@ final class EventsPage extends Page
             $components[] = $statusBar;
         }
 
+        $page = PagePaginator::boundedPage(count($rows), $perPage);
+        $pageRows = array_slice($rows, ($page - 1) * $perPage, $perPage);
+
         $components[] = TableBuilder::make()
-            ->items($rows)
+            ->items($pageRows)
             ->fields([
                 Text::make('ID', 'id'),
                 Text::make('Название', 'title'),
@@ -92,7 +99,8 @@ final class EventsPage extends Page
                 Number::make('Участники', 'participantsCount'),
                 Text::make('Действия', 'detailUrl')
                     ->changePreview(static fn (string $url) => ActionButton::make('Открыть', $url)->primary()),
-            ]);
+            ])
+            ->paginator(PagePaginator::make($pageRows, count($rows), $perPage, $page));
 
         return $components;
     }
