@@ -1,0 +1,24 @@
+# Деплой на одну ВМ: приложение (nginx + php-fpm + supervisord)
+# живёт в одном контейнере — файлы нигде между контейнерами не шарятся.
+#
+# Порядок: заполнить .env на хосте (см. docs/DEPLOY.md), затем
+#   docker compose up -d --build
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    image: unimice-frontend:latest
+    container_name: unimice-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      # .env с секретами живёт только на сервере и в gitignore.
+      - ./.env:/var/www/html/.env
+      # Записываемое: кеш, сессии, логи, SQLite.
+      - ./storage:/var/www/html/storage
+      - ./database:/var/www/html/database
+      # Корень для проверки домена при выпуске сертификата (certbot, см. DEPLOY.md).
+      - ./certbot-webroot:/var/www/html/public/.well-known
