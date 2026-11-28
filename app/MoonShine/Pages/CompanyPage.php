@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Pages;
 
+use App\Services\UniMice\Dto\ClientLegalEntityDto;
 use App\Services\UniMice\Endpoints\ClientsEndpoint;
 use App\Services\UniMice\UniMiceApiException;
 use MoonShine\Contracts\UI\ComponentContract;
@@ -40,7 +41,7 @@ final class CompanyPage extends Page
     {
         try {
             $client = app(ClientsEndpoint::class)->current();
-            /** @var DataCollection<int, \App\Services\UniMice\Dto\ClientLegalEntityDto> $legalEntities */
+            /** @var DataCollection<int, ClientLegalEntityDto> $legalEntities */
             $legalEntities = app(ClientsEndpoint::class)->legalEntities($client->id);
         } catch (UniMiceApiException $exception) {
             return [

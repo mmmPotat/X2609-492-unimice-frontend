@@ -71,7 +71,8 @@ final class UsersEndpoint
      * Документированные фильтры: query (поиск по ФИО/email),
      * clientId, legalEntityId, page, limit.
      *
-     * @param array{query?: string, clientId?: int, legalEntityId?: int, page?: int, limit?: int} $filters
+     * @param  array{query?: string, clientId?: int, legalEntityId?: int, page?: int, limit?: int}  $filters
+     *
      * @throws UniMiceApiException
      */
     public function list(array $filters = []): UsersResultDto
@@ -105,7 +106,7 @@ final class UsersEndpoint
      * Вложенный chief приходит полным объектом пользователя —
      * для таблицы достаточно ФИО, вытаскиваем его до сборки DTO.
      *
-     * @param array<array-key, mixed> $items
+     * @param  array<array-key, mixed>  $items
      * @return array<array-key, mixed>
      */
     private function withChiefNames(array $items): array

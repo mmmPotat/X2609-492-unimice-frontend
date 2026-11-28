@@ -111,8 +111,8 @@ final class EventCreateControllerTest extends TestCase
                 && ($request['clientInitiatorId'] ?? null) === 690
                 && ($request['agencyLegalEntityId'] ?? null) === 5
                 && ($request['participantsCount'] ?? null) === 50
-                && ($request['startDate'] ?? null) === '2026-12-01 10:00:00'
-                && ($request['finishDate'] ?? null) === '2026-12-01 18:00:00';
+                && ($request['startDate'] ?? null) === '2026-12-01'
+                && ($request['finishDate'] ?? null) === '2026-12-02';
         });
     }
 
@@ -190,6 +190,60 @@ final class EventCreateControllerTest extends TestCase
         $response->assertSessionHas('apiError');
     }
 
+    public function test_finish_date_cannot_be_earlier_than_start(): void
+    {
+        Http::fake(['*/auth/login' => Http::response(['token' => 'jwt-abc'])]);
+
+        $payload = $this->validPayload();
+        $payload['finishDate'] = '2026-11-30';
+
+        $response = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->post(route('admin.event-create'), $payload);
+
+        $response->assertSessionHasErrors(['finishDate']);
+        Http::assertNothingSent();
+    }
+
+    public function test_same_day_start_and_finish_is_allowed(): void
+    {
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/users/me' => Http::response([
+                'status' => 'success',
+                'data' => ['user' => ['id' => 690, 'clientId' => 5, 'legalEntity' => ['id' => 5]]],
+            ]),
+            '*/events' => Http::response([
+                'status' => 'success',
+                'data' => ['event' => $this->fakeCreatedEvent(57)],
+            ]),
+        ]);
+
+        $payload = $this->validPayload();
+        $payload['finishDate'] = $payload['startDate']; // однодневное мероприятие
+
+        $response = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->post(route('admin.event-create'), $payload);
+
+        $response->assertRedirect('/admin/page/event-detail?id=57');
+    }
+
+    public function test_datetime_string_is_rejected(): void
+    {
+        Http::fake(['*/auth/login' => Http::response(['token' => 'jwt-abc'])]);
+
+        $payload = $this->validPayload();
+        $payload['startDate'] = '2026-12-01T10:00'; // старый формат с временем
+
+        $response = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->post(route('admin.event-create'), $payload);
+
+        $response->assertSessionHasErrors(['startDate']);
+        Http::assertNothingSent();
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -199,8 +253,8 @@ final class EventCreateControllerTest extends TestCase
             'title' => 'Тестовая конференция',
             'typeId' => 1,
             'participantsCount' => 50,
-            'startDate' => '2026-12-01T10:00',
-            'finishDate' => '2026-12-01T18:00',
+            'startDate' => '2026-12-01',
+            'finishDate' => '2026-12-02',
             'cityId' => $cityId,
             'description' => 'Комментарий',
         ];

@@ -32,7 +32,7 @@ final class UniMiceClientTest extends TestCase
             '*/auth/login' => Http::response(['token' => 'jwt-abc', 'userSession' => ['id' => 1]]),
         ]);
 
-        $this->assertSame('jwt-abc', (new UniMiceClient())->token());
+        $this->assertSame('jwt-abc', (new UniMiceClient)->token());
     }
 
     public function test_login_failure_throws(): void
@@ -41,7 +41,7 @@ final class UniMiceClientTest extends TestCase
 
         $this->expectException(RuntimeException::class);
 
-        (new UniMiceClient())->token();
+        (new UniMiceClient)->token();
     }
 
     public function test_token_is_cached_and_sent_as_bearer(): void
@@ -51,7 +51,7 @@ final class UniMiceClientTest extends TestCase
             '*/events' => Http::response(['status' => 'success', 'data' => ['events' => []]]),
         ]);
 
-        $client = new UniMiceClient();
+        $client = new UniMiceClient;
 
         $client->token();
         $client->token();
@@ -77,7 +77,7 @@ final class UniMiceClientTest extends TestCase
                 ->push(['status' => 'success', 'data' => ['events' => [['id' => 1]]]]),
         ]);
 
-        $response = (new UniMiceClient())->request('GET', '/events');
+        $response = (new UniMiceClient)->request('GET', '/events');
 
         $this->assertSame(200, $response->status());
         $this->assertCount(1, $response->json('data.events'));
@@ -98,6 +98,6 @@ final class UniMiceClientTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('UNIMICE_API_BASE_URL');
 
-        new UniMiceClient();
+        new UniMiceClient;
     }
 }

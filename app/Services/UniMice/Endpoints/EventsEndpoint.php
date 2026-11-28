@@ -50,8 +50,9 @@ final class EventsEndpoint
      *
      * Пример: $events->list(['statusIds' => [1, 2], 'cityIds' => 6])
      *
-     * @param array<string, int|list<int>|string|null> $filters
+     * @param  array<string, int|list<int>|string|null>  $filters
      * @return DataCollection<int, EventDto>
+     *
      * @throws UniMiceApiException
      */
     public function list(array $filters = []): DataCollection
@@ -103,7 +104,8 @@ final class EventsEndpoint
      * Создание заявки (POST /events). $data — тело SaveEventRequest,
      * обязательные поля собирает контроллер формы.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
+     *
      * @throws UniMiceApiException
      */
     public function create(array $data): EventDto
@@ -129,6 +131,7 @@ final class EventsEndpoint
      * Справочник типов мероприятий (для формы создания).
      *
      * @return DataCollection<int, EventTypeDto>
+     *
      * @throws UniMiceApiException
      */
     public function types(): DataCollection
@@ -175,6 +178,7 @@ final class EventsEndpoint
      * отдаёт пустой список.
      *
      * @return DataCollection<int, CityDto>
+     *
      * @throws UniMiceApiException
      */
     public function searchCities(string $query): DataCollection
@@ -196,6 +200,7 @@ final class EventsEndpoint
      * Справочник статусов заявок — нужен для фильтров и подписей.
      *
      * @return DataCollection<int, EventStatusDto>
+     *
      * @throws UniMiceApiException
      */
     public function statuses(): DataCollection
@@ -214,7 +219,7 @@ final class EventsEndpoint
     }
 
     /**
-     * @param array<string, int|list<int>|string|null> $filters
+     * @param  array<string, int|list<int>|string|null>  $filters
      * @return array<string, string>
      */
     private function buildQuery(array $filters): array

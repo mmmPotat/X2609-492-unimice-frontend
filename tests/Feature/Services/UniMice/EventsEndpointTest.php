@@ -43,7 +43,7 @@ final class EventsEndpointTest extends TestCase
             ]),
         ]);
 
-        $events = (new EventsEndpoint(new UniMiceClient()))->list();
+        $events = (new EventsEndpoint(new UniMiceClient))->list();
 
         $this->assertInstanceOf(DataCollection::class, $events);
         $this->assertCount(2, $events);
@@ -68,7 +68,7 @@ final class EventsEndpointTest extends TestCase
             '*/events*' => Http::response(['status' => 'success', 'data' => ['events' => []]]),
         ]);
 
-        (new EventsEndpoint(new UniMiceClient()))->list([
+        (new EventsEndpoint(new UniMiceClient))->list([
             'statusIds' => [1, 2],
             'startDate' => '2026-10-01 00:00:00',
             'unknownParam' => 'x',
@@ -97,7 +97,7 @@ final class EventsEndpointTest extends TestCase
             ]),
         ]);
 
-        $statuses = (new EventsEndpoint(new UniMiceClient()))->statuses();
+        $statuses = (new EventsEndpoint(new UniMiceClient))->statuses();
 
         $this->assertInstanceOf(DataCollection::class, $statuses);
         $this->assertCount(2, $statuses);
@@ -121,7 +121,7 @@ final class EventsEndpointTest extends TestCase
             ]),
         ]);
 
-        $event = (new EventsEndpoint(new UniMiceClient()))->get(1);
+        $event = (new EventsEndpoint(new UniMiceClient))->get(1);
 
         $this->assertSame(1, $event->id);
         $this->assertSame('Конференция в Москве', $event->title);
@@ -142,7 +142,7 @@ final class EventsEndpointTest extends TestCase
         ]);
 
         try {
-            (new EventsEndpoint(new UniMiceClient()))->get(999);
+            (new EventsEndpoint(new UniMiceClient))->get(999);
             $this->fail('Exception expected');
         } catch (UniMiceApiException $exception) {
             $this->assertSame(404, $exception->httpStatus);
@@ -165,7 +165,7 @@ final class EventsEndpointTest extends TestCase
         $this->expectException(UniMiceApiException::class);
         $this->expectExceptionMessage('You are not allowed to perform this action');
 
-        (new EventsEndpoint(new UniMiceClient()))->list();
+        (new EventsEndpoint(new UniMiceClient))->list();
     }
 
     public function test_types_maps_items_to_dto_collection(): void
@@ -181,7 +181,7 @@ final class EventsEndpointTest extends TestCase
             ]),
         ]);
 
-        $types = (new EventsEndpoint(new UniMiceClient()))->types();
+        $types = (new EventsEndpoint(new UniMiceClient))->types();
 
         $this->assertInstanceOf(DataCollection::class, $types);
         $this->assertCount(2, $types);
@@ -214,7 +214,7 @@ final class EventsEndpointTest extends TestCase
             ]),
         ]);
 
-        $cities = (new EventsEndpoint(new UniMiceClient()))->searchCities('мос');
+        $cities = (new EventsEndpoint(new UniMiceClient))->searchCities('мос');
 
         $this->assertCount(2, $cities);
         $this->assertContainsOnlyInstancesOf(CityDto::class, $cities->items());
@@ -243,7 +243,7 @@ final class EventsEndpointTest extends TestCase
             ]),
         ]);
 
-        $city = (new EventsEndpoint(new UniMiceClient()))->city(6);
+        $city = (new EventsEndpoint(new UniMiceClient))->city(6);
 
         $this->assertSame(6, $city->id);
         $this->assertSame('Москва', $city->name);
@@ -261,7 +261,7 @@ final class EventsEndpointTest extends TestCase
             ]),
         ]);
 
-        $event = (new EventsEndpoint(new UniMiceClient()))->create([
+        $event = (new EventsEndpoint(new UniMiceClient))->create([
             'title' => 'Новая конференция',
             'statusId' => 2,
             'typeId' => 1,
@@ -293,7 +293,7 @@ final class EventsEndpointTest extends TestCase
         ]);
 
         try {
-            (new EventsEndpoint(new UniMiceClient()))->create([]);
+            (new EventsEndpoint(new UniMiceClient))->create([]);
             $this->fail('Exception expected');
         } catch (UniMiceApiException $exception) {
             $this->assertSame(422, $exception->httpStatus);

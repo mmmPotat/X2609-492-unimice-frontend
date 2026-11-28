@@ -39,7 +39,7 @@ final class UsersEndpointTest extends TestCase
             ]),
         ]);
 
-        $me = (new UsersEndpoint(new UniMiceClient()))->me();
+        $me = (new UsersEndpoint(new UniMiceClient))->me();
 
         $this->assertInstanceOf(MeDto::class, $me);
         $this->assertSame(690, $me->id);
@@ -57,7 +57,7 @@ final class UsersEndpointTest extends TestCase
             ]),
         ]);
 
-        $me = (new UsersEndpoint(new UniMiceClient()))->me();
+        $me = (new UsersEndpoint(new UniMiceClient))->me();
 
         $this->assertSame(1, $me->id);
         $this->assertNull($me->clientId);

@@ -6,8 +6,8 @@ namespace App\Services\UniMice\Endpoints;
 
 use App\Services\UniMice\ApiResponse;
 use App\Services\UniMice\Dto\SupplierDto;
-use App\Services\UniMice\Dto\SupplierTypeDto;
 use App\Services\UniMice\Dto\SuppliersResultDto;
+use App\Services\UniMice\Dto\SupplierTypeDto;
 use App\Services\UniMice\UniMiceApiException;
 use App\Services\UniMice\UniMiceClient;
 use Spatie\LaravelData\DataCollection;
@@ -41,6 +41,7 @@ final class SuppliersEndpoint
      *     priceMin?: float, priceMax?: float, sizeMin?: int, sizeMax?: int,
      *     capacityMin?: int, capacityMax?: int, page?: int, limit?: int,
      * } $filters
+     *
      * @throws UniMiceApiException
      */
     public function list(array $filters = []): SuppliersResultDto
@@ -92,6 +93,7 @@ final class SuppliersEndpoint
      * Справочник типов поставщиков (GET /suppliers/types).
      *
      * @return DataCollection<int, SupplierTypeDto>
+     *
      * @throws UniMiceApiException
      */
     public function types(): DataCollection

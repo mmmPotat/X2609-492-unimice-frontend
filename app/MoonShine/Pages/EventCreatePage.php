@@ -86,8 +86,10 @@ final class EventCreatePage extends Page
             ->required();
 
         $fields[] = Number::make('Количество участников', 'participantsCount')->required()->min(1);
-        $fields[] = SafeDate::make('Начало', 'startDate')->required()->withTime();
-        $fields[] = SafeDate::make('Завершение', 'finishDate')->required()->withTime();
+        // Бэкенд платформы при создании учитывает только календарный день —
+        // время не спрашиваем, формат Y-m-d.
+        $fields[] = SafeDate::make('Начало', 'startDate')->required()->format('Y-m-d');
+        $fields[] = SafeDate::make('Завершение', 'finishDate')->required()->format('Y-m-d');
         $fields[] = Textarea::make('Комментарий к заявке', 'description');
 
         $components[] = Heading::make($this->getTitle());

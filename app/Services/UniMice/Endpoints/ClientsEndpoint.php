@@ -49,6 +49,7 @@ final class ClientsEndpoint
      * Адрес и город лежат во вложенном supplier — поднимаем наверх.
      *
      * @return DataCollection<int, ClientLegalEntityDto>
+     *
      * @throws UniMiceApiException
      */
     public function legalEntities(int $clientId): DataCollection
@@ -79,7 +80,7 @@ final class ClientsEndpoint
     }
 
     /**
-     * @param array<string, mixed> $supplier
+     * @param  array<string, mixed>  $supplier
      * @return array<string, mixed>|null
      */
     private function extractCity(array $supplier): ?array

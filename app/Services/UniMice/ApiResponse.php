@@ -15,7 +15,7 @@ use Illuminate\Http\Client\Response;
 final class ApiResponse
 {
     /**
-     * @param array<string, list<string>>|null $errors ошибки валидации по полям
+     * @param  array<string, list<string>>|null  $errors  ошибки валидации по полям
      */
     public function __construct(
         public readonly string $status,

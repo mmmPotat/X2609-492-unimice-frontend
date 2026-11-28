@@ -13,7 +13,7 @@ use RuntimeException;
 final class UniMiceApiException extends RuntimeException
 {
     /**
-     * @param array<string, list<string>>|null $errors ошибки валидации: поле => [сообщения]
+     * @param  array<string, list<string>>|null  $errors  ошибки валидации: поле => [сообщения]
      */
     public function __construct(
         string $message,

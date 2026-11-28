@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Pages;
 
-use MoonShine\Laravel\Pages\Page;
 use MoonShine\Contracts\UI\ComponentContract;
-#[\MoonShine\MenuManager\Attributes\SkipMenu]
+use MoonShine\Laravel\Pages\Page;
+use MoonShine\MenuManager\Attributes\SkipMenu;
+
+#[SkipMenu]
 
 class Dashboard extends Page
 {
@@ -16,7 +18,7 @@ class Dashboard extends Page
     public function getBreadcrumbs(): array
     {
         return [
-            '#' => $this->getTitle()
+            '#' => $this->getTitle(),
         ];
     }
 
@@ -29,7 +31,7 @@ class Dashboard extends Page
      * @return list<ComponentContract>
      */
     protected function components(): iterable
-	{
-		return [];
-	}
+    {
+        return [];
+    }
 }

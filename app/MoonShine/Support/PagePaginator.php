@@ -19,10 +19,10 @@ use MoonShine\Crud\TypeCasts\PaginatorCaster;
 final class PagePaginator
 {
     /**
-     * @param list<array<string, mixed>> $items строки текущей страницы
-     * @param int $total всего записей по выборке
-     * @param int $perPage записей на странице
-     * @param int $page текущая страница (?page=, минимум 1)
+     * @param  list<array<string, mixed>>  $items  строки текущей страницы
+     * @param  int  $total  всего записей по выборке
+     * @param  int  $perPage  записей на странице
+     * @param  int  $page  текущая страница (?page=, минимум 1)
      */
     public static function make(array $items, int $total, int $perPage, int $page): PaginatorContract
     {

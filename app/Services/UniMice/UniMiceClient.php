@@ -22,13 +22,21 @@ use Throwable;
 class UniMiceClient
 {
     private readonly string $baseUrl;
+
     private readonly string $loginPath;
+
     private readonly ?string $email;
+
     private readonly ?string $password;
+
     private readonly int $timeout;
+
     private readonly int $connectTimeout;
+
     private readonly int $retryTimes;
+
     private readonly int $tokenCacheTtl;
+
     private readonly string $tokenCacheKey;
 
     public function __construct()
@@ -71,8 +79,8 @@ class UniMiceClient
      * Авторизованный запрос к API. При 401 обновляет токен и повторяет
      * запрос один раз. Возвращает "сырой" ответ — разбор выше.
      *
-     * @param array<string, mixed> $query
-     * @param array<string, mixed>|null $body
+     * @param  array<string, mixed>  $query
+     * @param  array<string, mixed>|null  $body
      */
     public function request(string $method, string $path, array $query = [], ?array $body = null): Response
     {
@@ -87,8 +95,8 @@ class UniMiceClient
     }
 
     /**
-     * @param array<string, mixed> $query
-     * @param array<string, mixed>|null $body
+     * @param  array<string, mixed>  $query
+     * @param  array<string, mixed>|null  $body
      */
     private function send(string $method, string $path, array $query, ?array $body): Response
     {
@@ -96,8 +104,8 @@ class UniMiceClient
     }
 
     /**
-     * @param array<string, mixed> $query
-     * @param array<string, mixed>|null $body
+     * @param  array<string, mixed>  $query
+     * @param  array<string, mixed>|null  $body
      * @return array<string, mixed>
      */
     private function options(array $query, ?array $body): array
