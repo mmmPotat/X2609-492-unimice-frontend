@@ -16,3 +16,26 @@
 .unimice-filter-limit {
     max-width: 90px;
 }
+
+/* Профиль: сетка «подпись — значение», как в оригинале на Appsmith. */
+.heading:has(> .unimice-profile-label),
+.heading:has(> .unimice-profile-value) {
+    margin: 0;
+}
+
+.unimice-profile-label {
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: rgb(107 114 128);
+}
+
+.unimice-profile-value {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+}
+
+.unimice-profile-clients-title {
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+}

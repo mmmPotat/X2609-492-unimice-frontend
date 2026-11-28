@@ -128,6 +128,9 @@ final class EmployeesPageTest extends TestCase
                         'id' => 690,
                         'email' => 'agent@test.com',
                         'fullName' => 'Агент Студентов Тестовый',
+                        'firstName' => 'Студентов',
+                        'lastName' => 'Агент',
+                        'middleName' => 'Тестовый',
                         'shortName' => 'Агент Студентов',
                         'post' => 'Студент ФИИТ',
                         'phone' => '89998887766',
@@ -173,18 +176,23 @@ final class EmployeesPageTest extends TestCase
             ->get('/admin/page/profile');
 
         $response->assertOk();
-        $response->assertSee('Агент Студентов Тестовый');
+        $response->assertSee('Данные пользователя');
+        $response->assertSee('Агент');
+        $response->assertSee('Студентов');
+        $response->assertSee('Тестовый');
         $response->assertSee('agent@test.com');
+        $response->assertSee('89998887766');
+        $response->assertSee('Студент ФИИТ');
         $response->assertSee('Мельников Михей Денисович');
         $response->assertSee('ООО «Тест»');
         $response->assertSee('Travel менеджеры');
         // прикреплённые клиенты
         $response->assertSee('Прикреплённые клиенты');
         $response->assertSee('Тестовый клиент');
-        $response->assertSee('Агентство');
-        $response->assertSee('requests@test.com');
-        // форма редактирования заполнена текущими значениями
+        // редактирование — в модальном окне, форма заполнена текущими значениями
+        $response->assertSee('Редактировать');
         $response->assertSee('Редактирование профиля');
+        $response->assertSee('profile-edit');
         $response->assertSee('Сохранить');
     }
 

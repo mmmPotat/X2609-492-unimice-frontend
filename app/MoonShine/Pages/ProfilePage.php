@@ -4,27 +4,31 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Pages;
 
+use App\Services\UniMice\Dto\MeDto;
 use App\Services\UniMice\Endpoints\UsersEndpoint;
 use App\Services\UniMice\UniMiceApiException;
 use MoonShine\Contracts\UI\ComponentContract;
 use MoonShine\Laravel\Pages\Page;
 use MoonShine\Support\Enums\FormMethod;
+use MoonShine\UI\Components\ActionButton;
 use MoonShine\UI\Components\Alert;
 use MoonShine\UI\Components\Card;
 use MoonShine\UI\Components\FormBuilder;
 use MoonShine\UI\Components\Heading;
+use MoonShine\UI\Components\Layout\Box;
 use MoonShine\UI\Components\Layout\Column;
+use MoonShine\UI\Components\Layout\Flex;
 use MoonShine\UI\Components\Layout\Grid;
-use MoonShine\UI\Components\Table\TableBuilder;
+use MoonShine\UI\Components\Modal;
 use MoonShine\UI\Fields\Text;
 
 /**
  * Профиль текущего пользователя — GET /users/me.
  *
- * Три блока: личные данные, роль в компании, прикреплённые клиенты
- * (GET /users/{id}/clients). Ниже — форма редактирования
- * (PATCH /users через ProfileUpdateController): имя, отчество,
- * должность, телефон.
+ * Одна карточка «Данные пользователя», как в оригинале на Appsmith:
+ * сетка «подпись — значение» (ФИО, контакты, компания) и прикреплённые
+ * клиенты (GET /users/{id}/clients). Редактирование (PATCH /users через
+ * ProfileUpdateController) открывается в модальном окне.
  */
 final class ProfilePage extends Page
 {
@@ -63,33 +67,31 @@ final class ProfilePage extends Page
             $components[] = Alert::make(type: 'error')->content((string) $apiError);
         }
 
-        $components[] = Heading::make($me->fullName ?? 'Профиль');
+        $components[] = Flex::make([
+            Heading::make('Данные пользователя', 4),
+            Modal::make(
+                title: 'Редактирование профиля',
+                outer: ActionButton::make('Редактировать')->class('btn-primary'),
+                components: [$this->editForm($me)],
+            )
+                ->name('profile-edit')
+                ->wide()
+                // Ошибки валидации после неудачного сохранения — открыть модалку повторно
+                ->open(session()->has('errors')),
+        ], justifyAlign: 'between');
 
-        $components[] = Grid::make([
-            Column::make([
-                Card::make('Личные данные', values: [
-                    'Email' => $me->email ?? '—',
-                    'Телефон' => $me->phone ?? '—',
-                    'Должность' => $me->post ?? '—',
-                    'В системе с' => $me->createdAt ?? '—',
-                ]),
-            ])->columnSpan(4),
-
-            Column::make([
-                Card::make('Роль в компании', values: [
-                    'Роль' => $me->role?->name ?? '—',
-                    'Отдел' => $me->group?->name ?? '—',
-                    'Руководитель' => $me->chiefName ?? '—',
-                    'Компания' => $me->clientName ?? '—',
-                ]),
-            ])->columnSpan(4),
-
-            Column::make($this->clientsComponents($me->id))->columnSpan(4),
+        $components[] = Box::make([
+            Grid::make($this->infoCells($me)),
+            Heading::make('Прикреплённые клиенты', 5)->class('unimice-profile-clients-title'),
+            ...$this->clientsComponents($me->id),
         ]);
 
-        $components[] = Heading::make('Редактирование профиля');
+        return $components;
+    }
 
-        $components[] = FormBuilder::make()
+    private function editForm(MeDto $me): FormBuilder
+    {
+        return FormBuilder::make()
             ->action(route('admin.profile-update'))
             ->method(FormMethod::POST)
             ->fields([
@@ -109,8 +111,37 @@ final class ProfilePage extends Page
                 'phone' => old('phone', $me->phone),
             ])
             ->submit('Сохранить');
+    }
 
-        return $components;
+    /**
+     * Сетка «подпись — значение»: три колонки, как в оригинале.
+     *
+     * @return list<ComponentContract>
+     */
+    private function infoCells(MeDto $me): array
+    {
+        $fields = [
+            ['Фамилия', $me->lastName],
+            ['Имя', $me->firstName],
+            ['Отчество', $me->middleName],
+            ['Почта', $me->email],
+            ['Телефон', $me->phone],
+            ['Должность', $me->post],
+            ['Юридическое лицо', $me->clientName],
+            ['Группа', $me->group?->name],
+            ['Руководитель', $me->chiefName],
+        ];
+
+        $cells = [];
+
+        foreach ($fields as [$label, $value]) {
+            $cells[] = Column::make([
+                Heading::make($label, 6)->class('unimice-profile-label'),
+                Heading::make($value ?: '—', 5)->class('unimice-profile-value'),
+            ], colSpan: 4);
+        }
+
+        return $cells;
     }
 
     /**
@@ -120,40 +151,24 @@ final class ProfilePage extends Page
      */
     private function clientsComponents(int $userId): array
     {
-        $components = [Heading::make('Прикреплённые клиенты')];
-
         try {
             $clients = app(UsersEndpoint::class)->clients($userId);
         } catch (UniMiceApiException $exception) {
-            $components[] = Alert::make(type: 'error')
-                ->content('Не удалось загрузить клиентов: '.$exception->getMessage());
-
-            return $components;
-        }
-
-        $rows = [];
-
-        foreach ($clients as $client) {
-            $rows[] = [
-                'name' => $client->name,
-                'type' => $client->typeLabel ?? '—',
-                'requestEmail' => $client->requestEmail ?: '—',
+            return [
+                Alert::make(type: 'error')
+                    ->content('Не удалось загрузить клиентов: '.$exception->getMessage()),
             ];
         }
 
-        if ($rows === []) {
-            $components[] = Alert::make(type: 'info')->content('Клиенты не прикреплены.');
-
-            return $components;
+        if ($clients === []) {
+            return [Alert::make(type: 'info')->content('Клиенты не прикреплены.')];
         }
 
-        $components[] = TableBuilder::make()
-            ->items($rows)
-            ->fields([
-                Text::make('Название', 'name'),
-                Text::make('Тип', 'type'),
-                Text::make('Email для заявок', 'requestEmail'),
-            ]);
+        $components = [];
+
+        foreach ($clients as $client) {
+            $components[] = Card::make($client->name);
+        }
 
         return $components;
     }
