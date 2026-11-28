@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\MoonShine\Pages;
 
+use App\MoonShine\Support\PagePaginator;
+use App\Services\UniMice\Dto\UsersResultDto;
 use App\Services\UniMice\Endpoints\UsersEndpoint;
 use App\Services\UniMice\UniMiceApiException;
 use MoonShine\Contracts\UI\ComponentContract;
+use MoonShine\Crud\Components\Paginator as PaginatorComponent;
 use MoonShine\Laravel\Pages\Page;
 use MoonShine\Support\Enums\FormMethod;
 use MoonShine\UI\Components\Alert;
@@ -18,8 +21,9 @@ use MoonShine\UI\Fields\Text;
 /**
  * Сотрудники агентства — GET /users.
  *
- * Поиск серверный, без JS: строка поиска живёт в GET-параметре ?query=,
- * страница пробрасывает её в API как есть (API ищет по ФИО/email).
+ * Поиск и пагинация серверные, без JS: строка поиска живёт в ?query=,
+ * страница — в ?page=, оба параметра пробрасываются в API
+ * (API ищет по ФИО/email, нарезает выборку по page/limit).
  */
 final class EmployeesPage extends Page
 {
@@ -41,11 +45,20 @@ final class EmployeesPage extends Page
     protected function components(): iterable
     {
         $query = trim((string) request()->query('query', ''));
+        $page = PagePaginator::currentPage();
+        $perPage = 25;
+
+        $filters = $query === '' ? [] : ['query' => $query];
 
         try {
-            $result = app(UsersEndpoint::class)->list(
-                $query === '' ? [] : ['query' => $query],
-            );
+            $result = $this->fetch($filters, $page, $perPage);
+
+            // ?page= за пределами выборки: API честно вернёт пустую
+            // страницу — перезапрашиваем последнюю, чтобы показать данные.
+            if ($page > 1 && count($result->items) === 0 && $result->total > 0) {
+                $page = PagePaginator::boundedPage($result->total, $perPage);
+                $result = $this->fetch($filters, $page, $perPage);
+            }
         } catch (UniMiceApiException $exception) {
             return [
                 Alert::make(type: 'error')->content($exception->getMessage()),
@@ -89,6 +102,10 @@ final class EmployeesPage extends Page
                     Text::make('Телефон', 'phone'),
                     Text::make('Email', 'email'),
                 ]),
+
+            PaginatorComponent::make(
+                PagePaginator::laravelPaginator($rows, $result->total, $perPage, $page),
+            ),
         ];
 
         // пустая таблица неочевидна — говорим об этом прямо
@@ -97,5 +114,17 @@ final class EmployeesPage extends Page
         }
 
         return $components;
+    }
+
+    /**
+     * @param  array{query?: string}  $filters
+     */
+    private function fetch(array $filters, int $page, int $perPage): UsersResultDto
+    {
+        return app(UsersEndpoint::class)->list([
+            ...$filters,
+            'page' => $page,
+            'limit' => $perPage,
+        ]);
     }
 }

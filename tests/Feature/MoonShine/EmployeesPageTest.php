@@ -28,7 +28,7 @@ final class EmployeesPageTest extends TestCase
     {
         Http::fake([
             '*/auth/login' => Http::response(['token' => 'jwt-abc']),
-            '*/users' => Http::response([
+            '*/users*' => Http::response([
                 'status' => 'success',
                 'data' => [
                     'items' => [
@@ -70,6 +70,51 @@ final class EmployeesPageTest extends TestCase
         $response->assertSee('Никого не найдено');
 
         Http::assertSent(static fn ($request) => ($request->data()['query'] ?? null) === 'Иванова');
+    }
+
+    public function test_page_and_limit_are_passed_to_api(): void
+    {
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/users*' => Http::response([
+                'status' => 'success',
+                'data' => ['items' => [$this->fakeUser(1, 'Иванова Анна Петровна')], 'total' => 1],
+            ]),
+        ]);
+
+        $response = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->get('/admin/page/employees');
+
+        $response->assertOk();
+
+        Http::assertSent(static fn ($request) => ($request->data()['page'] ?? null) === 1
+            && ($request->data()['limit'] ?? null) === 25);
+    }
+
+    public function test_second_page_renders_and_keeps_search_query(): void
+    {
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/users*' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'items' => [$this->fakeUser(26, 'Петров Пётр Пётрович')],
+                    'total' => 30, // 25 на первой странице, одна запись на второй
+                ],
+            ]),
+        ]);
+
+        $response = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->get('/admin/page/employees?query=Иванова&page=2');
+
+        $response->assertOk();
+        $response->assertSee('Петров Пётр Пётрович');
+        $response->assertSee('Сотрудники (30)');
+        // ссылки пагинации сохраняют и строку поиска, и номер соседней страницы
+        $response->assertSee('page=1');
+        $response->assertSee('query=');
     }
 
     public function test_profile_page_renders_user_cards(): void
