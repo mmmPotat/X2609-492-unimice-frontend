@@ -5,14 +5,17 @@ declare(strict_types=1);
 namespace App\Services\UniMice\Dto;
 
 use Carbon\CarbonImmutable;
+use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Data;
+use Spatie\LaravelData\DataCollection;
 
 /**
  * Заявка на мероприятие (событие) из API UniMICE.
  *
- * Соответствует элементу коллекции GET /events (data.events[]).
- * Поля, не нужные текущему спринту (extraFields, eventFees,
- * amountSummaries и т.п.), намеренно не описаны — spatie их игнорирует.
+ * Соответствует элементу коллекции GET /events (data.events[]) и объекту
+ * GET /events/{id}. Вложенные разделы карточки (инициатор, менеджер,
+ * взносы, доп. поля, суммы) в коллекции обычно отсутствуют — поэтому
+ * nullable. Поля API, не описанные здесь, spatie игнорирует.
  */
 final class EventDto extends Data
 {
@@ -35,5 +38,18 @@ final class EventDto extends Data
         public readonly int $participantsCount,
         public readonly ?CarbonImmutable $createdAt,
         public readonly bool $canApprove,
+        public readonly ?EventUserDto $clientInitiator = null,
+        public readonly ?EventUserDto $agencyManager = null,
+        public readonly ?EventUserDto $clientObserver = null,
+        public readonly ?EventUserDto $agencyObserver = null,
+        public readonly ?EventAmountsDto $amountSummaries = null,
+        /** @var null|DataCollection<int, EventFeeDto> */
+        #[DataCollectionOf(EventFeeDto::class)]
+        public readonly ?DataCollection $eventFees = null,
+        /** @var null|DataCollection<int, EventExtraFieldDto> */
+        #[DataCollectionOf(EventExtraFieldDto::class)]
+        public readonly ?DataCollection $extraFields = null,
+        /** @var array<int, array<string, mixed>> Услуги; форма элемента в доке не зафиксирована, поэтому массив. */
+        public readonly array $eventAmenities = [],
     ) {}
 }

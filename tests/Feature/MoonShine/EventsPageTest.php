@@ -266,6 +266,104 @@ final class EventsPageTest extends TestCase
         $response->assertSee('Москва');
     }
 
+    public function test_detail_page_renders_all_sections_as_tabs(): void
+    {
+        $event = array_merge($this->fakeEvent(), [
+            'clientLegalEntity' => [
+                'id' => 29,
+                'name' => 'ООО «Клиент»',
+                'nameEn' => null,
+                'clientId' => 23,
+                'inn' => '1112223335',
+                'kpp' => '999888777',
+                'address' => 'Татищева 20/20',
+                'vatRate' => '22',
+                'createdAt' => '2026-01-01T00:00:00+03:00',
+                'updatedAt' => null,
+            ],
+            'clientInitiator' => [
+                'id' => 687,
+                'email' => 'client@test.com',
+                'firstName' => 'Иван',
+                'lastName' => 'Клиентов',
+                'middleName' => null,
+                'post' => 'Менеджер',
+                'phone' => '89001112233',
+                'role' => ['id' => 1, 'name' => 'Сотрудник', 'nameEn' => 'Employee'],
+                'client' => ['id' => 23, 'name' => 'ООО «Клиент»', 'nameEn' => null],
+            ],
+            'agencyManager' => [
+                'id' => 690,
+                'email' => 'agent@test.com',
+                'firstName' => 'Агент',
+                'lastName' => 'Студентов',
+                'middleName' => 'Тестовый',
+                'post' => 'Студент ФИИТ',
+                'phone' => '89998887766',
+            ],
+            'eventFees' => [
+                [
+                    'id' => 252,
+                    'eventId' => 1,
+                    'name' => 'Орг. сбор',
+                    'amount' => 1000.5,
+                    'vatRate' => '22',
+                    'description' => null,
+                    'createdAt' => '2026-10-29T18:26:25+03:00',
+                ],
+            ],
+            'extraFields' => [
+                [
+                    'id' => 56,
+                    'name' => 'Номер РО',
+                    'type' => 'input',
+                    'required' => true,
+                    'options' => [],
+                    'value' => 'РО-123',
+                    'eventExtraFieldValue' => null,
+                ],
+            ],
+            'amountSummaries' => [
+                'totalAmountServices' => ['withVat' => 0, 'withoutVat' => 0, 'vat' => 0],
+                'totalAmountFees' => ['withVat' => 1220.61, 'withoutVat' => 1000, 'vat' => 220.61],
+                'totalAmount' => ['withVat' => 1220.61, 'withoutVat' => 1000, 'vat' => 220.61],
+            ],
+        ]);
+
+        Http::fake([
+            '*/auth/login' => Http::response(['token' => 'jwt-abc']),
+            '*/events/1' => Http::response([
+                'status' => 'success',
+                'data' => $event,
+            ]),
+        ]);
+
+        $response = $this
+            ->actingAs(MoonshineUser::factory()->create(), 'moonshine')
+            ->get('/admin/page/event-detail?id=1');
+
+        $response->assertOk();
+        // заголовки всех табов
+        foreach (['Общая информация', 'Клиент', 'Агентство', 'Участники', 'Услуги', 'Организационные взносы', 'Дополнительные поля'] as $tab) {
+            $response->assertSee($tab);
+        }
+        // инициатор и менеджер
+        $response->assertSee('Клиентов Иван');
+        $response->assertSee('client@test.com');
+        $response->assertSee('Студентов Агент Тестовый');
+        // юр. лицо из fakeEvent
+        $response->assertSee('1112223335');
+        // взносы и суммы
+        $response->assertSee('Орг. сбор');
+        $response->assertSee('1 000,50 ₽');
+        $response->assertSee('1 220,61 ₽');
+        // доп. поля
+        $response->assertSee('Номер РО');
+        $response->assertSee('РО-123');
+        // пустые разделы — дружелюбные заглушки
+        $response->assertSee('Услуги не добавлены.');
+    }
+
     public function test_detail_page_404_for_missing_event(): void
     {
         Http::fake([
