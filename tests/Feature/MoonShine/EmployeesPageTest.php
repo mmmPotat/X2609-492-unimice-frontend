@@ -141,6 +141,31 @@ final class EmployeesPageTest extends TestCase
                     ],
                 ],
             ]),
+            '*/users/*/clients' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'items' => [
+                        [
+                            'id' => 5,
+                            'name' => 'ООО «Тест»',
+                            'nameEn' => null,
+                            'type' => 'agency',
+                            'typeLabel' => 'Агентство',
+                            'requestEmail' => 'requests@test.com',
+                            'createdAt' => '2026-01-01',
+                        ],
+                        [
+                            'id' => 23,
+                            'name' => 'Тестовый клиент',
+                            'nameEn' => null,
+                            'type' => 'client',
+                            'typeLabel' => 'Клиент',
+                            'requestEmail' => null,
+                            'createdAt' => '2026-03-20',
+                        ],
+                    ],
+                ],
+            ]),
         ]);
 
         $response = $this
@@ -153,6 +178,14 @@ final class EmployeesPageTest extends TestCase
         $response->assertSee('Мельников Михей Денисович');
         $response->assertSee('ООО «Тест»');
         $response->assertSee('Travel менеджеры');
+        // прикреплённые клиенты
+        $response->assertSee('Прикреплённые клиенты');
+        $response->assertSee('Тестовый клиент');
+        $response->assertSee('Агентство');
+        $response->assertSee('requests@test.com');
+        // форма редактирования заполнена текущими значениями
+        $response->assertSee('Редактирование профиля');
+        $response->assertSee('Сохранить');
     }
 
     public function test_company_page_renders_client_and_legal_entities(): void
